@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin | IMPACTA CRM</title>
+  <style>
+    :root{ --brand:#0c62ab; --bg:#f1f5f9; --ink:#0f172a; --line:#e2e8f0; --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body{ margin:0; font-family:var(--font); background:var(--bg); color:var(--ink); }
+    .topbar { background:#fff; border-bottom:1px solid var(--line); padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+    .brand img { height:36px; }
+    .btn { padding:10px 16px; border-radius:6px; font-weight:600; cursor:pointer; border:none; background:var(--brand); color:white; font-size:14px; }
+    .btn.sec { background:white; color:var(--ink); border:1px solid var(--line); }
+    .btn.danger { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+    .btn.danger:hover { background:#fecaca; }
+    .container { max-width:1400px; margin:24px auto; padding:0 24px; display:grid; gap:24px; }
+    .card { background:white; border-radius:12px; border:1px solid var(--line); padding:24px; }
+    h2 { margin-top:0; font-size:18px; color:var(--brand); }
+    table { width:100%; border-collapse:collapse; margin-top:0; }
+    th, td { text-align:left; padding:12px; border-bottom:1px solid var(--line); font-size:13px; }
+    th { background:#f8fafc; color:#64748b; font-size:11px; text-transform:uppercase; font-weight:700; position:sticky; top:0; cursor: pointer; }
+    th:hover { color: var(--brand); }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    input, select { width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box; font-size:13px; }
+    .badge { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; background:#e2e8f0; }
+    .badge.admin { background:#dbeafe; color:#1e40af; }
+    input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+
+    /* FILTERS BAR */
+    .filter-bar { display:grid; grid-template-columns: repeat(5, 1fr) auto; gap:10px; margin-bottom:16px; padding:16px; background:#f8fafc; border:1px solid var(--line); border-radius:8px; align-items:end; }
+    .filter-group label { display:block; font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; text-transform:uppercase; }
+    
+    /* MODAL Styling */
+    .modal { position:fixed; inset:0; background:rgba(15,23,42,.7); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px; z-index:1000; }
+    .modal.open { display:flex; }
+    .modal .panel { width:min(600px, 95%); background:#fff; border-radius:12px; border:1px solid var(--line); overflow:hidden; display:flex; flex-direction:column; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); }
+    .modal .hd { padding:16px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:#fff; }
+    .modal .hd h3 { margin:0; font-size:16px; font-weight:700; color:var(--ink); }
+    .modal .bd { padding:24px; display:flex; flex-direction:column; gap:16px; }
+    textarea.import-area { width:100%; height:200px; padding:16px; border:1px solid var(--line); border-radius:8px; font-family:var(--font); font-size:13px; line-height:1.5; resize:vertical; outline:none; background:#f8fafc; box-sizing: border-box; }
+    textarea.import-area:focus { border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px rgba(12,98,171,.1); }
+    .modal-btn { width: 100%; justify-content: center; padding: 12px; font-size: 15px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><img src="img/logo-main-2026.png" alt="IMPACTA"></div>
+  <div style="display:flex; gap:10px;">
+    <a href="crm.html" class="btn sec" style="text-decoration:none;">Open CRM</a>
+    <button class="btn sec" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  
+  <div class="card">
+    <h2>Manage Users</h2>
+    <div class="row" style="grid-template-columns: 2fr 2fr 1fr 1fr;">
+      <input id="newUserEmail" placeholder="New User Email" type="email" />
+      <input id="newUserPass" placeholder="Password (min 6 chars)" type="text" />
+      <select id="newUserRole">
+          <option value="agent">Agent</option>
+          <option value="admin">Admin</option>
+      </select>
+      <button class="btn" id="btnCreate" onclick="createUser()">Create</button>
+    </div>
+    <table style="margin-top:0;">
+      <thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody id="userList"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2>Lead Database</h2>
+        <div style="display:flex; gap:10px;">
+            <button class="btn sec" onclick="openImportModal()">Import CSV</button>
+            <button class="btn danger" id="btnBulkDelete" style="display:none;" onclick="bulkDelete()">Delete Selected</button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="f_stage" onchange="applyFilters()"><option value="">All</option></select>
+        </div>
+        <div class="filter-group">
+            <label>City</label>
+            <select id="f_city" onchange="applyFilters()"><option value="">All</option></select>
+        </div>
+        <div class="filter-group">
+            <label>State</label>
+            <select id="f_state" onchange="applyFilters()"><option value="">All</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Industry</label>
+            <select id="f_industry" onchange="applyFilters()"><option value="">All</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Assigned To</label>
+            <select id="f_assign" onchange="applyFilters()"><option value="unassigned">Unassigned</option></select>
+        </div>
+        <div>
+            <button class="btn sec" style="width:100%" onclick="resetFilters()">Reset</button>
+        </div>
+    </div>
+    
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:6px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink);">Bulk Actions:</span>
+        <select id="assignUser" style="width:200px; padding:6px;"><option value="">Select Agent...</option></select>
+        <button class="btn" style="padding:6px 12px;" onclick="assignLeads()">Assign</button>
+        <button class="btn sec" style="padding:6px 12px;" onclick="bulkUnassign()">Unassign Selected</button>
+        
+        <span id="recordCount" style="margin-left:auto; font-size:12px; color:#64748b;">0 records</span>
+    </div>
+
+    <div style="max-height:600px; overflow-y:auto; border:1px solid var(--line); border-radius:8px;">
+      <table>
+        <thead>
+            <tr>
+                <th style="width:40px; text-align:center; cursor:default;"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                <th onclick="setSort('company')">Company</th>
+                <th onclick="setSort('cityClean')">City</th>
+                <th onclick="setSort('stateExtracted')">State</th>
+                <th onclick="setSort('industry')">Industry</th>
+                <th onclick="setSort('assignedName')">Assigned To</th>
+                <th onclick="setSort('stage')">Stage</th>
+                <th style="text-align:right; cursor:default;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="leadList"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal" id="importModal">
+  <div class="panel">
+    <div class="hd">
+      <h3>Import Leads (CSV)</h3>
+      <button class="btn sec" onclick="closeImportModal()" style="border:none; background:transparent; color:#64748b; font-size:18px; padding:0;">&times;</button>
+    </div>
+    <div class="bd">
+      <p style="margin:0; color:#64748b; font-size:13px;">
+        Paste your CSV data below. First row must be headers.
+      </p>
+      <textarea id="importText" class="import-area" placeholder="Company,Phone,City,State,Industry..."></textarea>
+      <button class="btn modal-btn" onclick="processImport()">Process Import</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAd6SXuX3nNzoCr07ENc-u_QRU1Not_FAI",
+    authDomain: "impactacrm.firebaseapp.com",
+    projectId: "impactacrm",
+    storageBucket: "impactacrm.firebasestorage.app",
+    messagingSenderId: "323514822260",
+    appId: "1:323514822260:web:9eec9a85f865abb780ab21",
+    measurementId: "G-DW3JFMDG6Y"
+  };
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  auth.onAuthStateChanged(user => {
+    if (!user) return window.location.href = 'index.html';
+    db.collection('users').doc(user.uid).get().then(doc => {
+        if (!doc.exists || doc.data().role !== 'admin') {
+            window.location.href = 'crm.html';
+        } else {
+            loadData();
+        }
+    });
+  });
+
+  let allUsers = [];
+  let allLeads = []; 
+  let filteredLeads = []; 
+  let sortKey = 'createdAt'; 
+  let sortDesc = true;
+
+  function loadData() {
+    db.collection('users').onSnapshot(snap => {
+        allUsers = [];
+        const userTbody = document.getElementById('userList');
+        const assignSel = document.getElementById('assignUser');
+        
+        userTbody.innerHTML = '';
+        assignSel.innerHTML = '<option value="">Select Agent...</option>';
+        
+        snap.forEach(doc => {
+            const u = doc.data();
+            u.id = doc.id;
+            allUsers.push(u);
+            userTbody.innerHTML += `
+                <tr>
+                    <td>${u.email}</td>
+                    <td><span class="badge ${u.role}">${u.role}</span></td>
+                    <td>${u.createdAt ? new Date(u.createdAt.toDate()).toLocaleDateString() : '-'}</td>
+                    <td><button class="btn sec" style="padding:4px 8px; font-size:12px" onclick="deleteUser('${doc.id}')">Remove</button></td>
+                </tr>
+            `;
+            if(u.role === 'agent') {
+                assignSel.innerHTML += `<option value="${doc.id}">${u.email}</option>`;
+            }
+        });
+        loadLeads();
+    });
+  }
+
+  function loadLeads() {
+     db.collection('leads').orderBy('createdAt', 'desc').onSnapshot(snap => {
+         allLeads = [];
+         snap.forEach(doc => {
+             let l = doc.data();
+             l.id = doc.id;
+             const agent = allUsers.find(u => u.id === l.assignedTo);
+             l.assignedName = agent ? agent.email : 'Unassigned';
+             
+             if(!l.state && l.city && l.city.includes(',')) {
+                 let parts = l.city.split(',');
+                 l.stateExtracted = parts[parts.length-1].trim();
+                 l.cityClean = parts[0].trim();
+             } else {
+                 l.stateExtracted = l.state || '';
+                 l.cityClean = l.city || '';
+             }
+             allLeads.push(l);
+         });
+         
+         populateFilterOptions();
+         applyFilters(); 
+     });
+  }
+
+  function populateFilterOptions() {
+      const getCounts = (key) => {
+          const counts = {};
+          allLeads.forEach(l => {
+              const val = l[key] || 'Unknown';
+              counts[val] = (counts[val] || 0) + 1;
+          });
+          return counts;
+      };
+
+      const getAssignCounts = () => {
+          const counts = { 'unassigned': 0 };
+          allUsers.forEach(u => counts[u.id] = 0);
+          
+          allLeads.forEach(l => {
+              if(!l.assignedTo) counts['unassigned']++;
+              else if(counts[l.assignedTo] !== undefined) counts[l.assignedTo]++;
+          });
+          return counts;
+      };
+
+      const stageCounts = getCounts('stage');
+      const cityCounts = getCounts('cityClean');
+      const stateCounts = getCounts('stateExtracted');
+      const indCounts = getCounts('industry');
+      const assignCounts = getAssignCounts();
+
+      const buildOptions = (counts, elId, isAssign = false) => {
+          const el = document.getElementById(elId);
+          const current = el.value;
+          let html = '<option value="">All</option>';
+          
+          if(isAssign) {
+              html += `<option value="unassigned">Unassigned (${assignCounts['unassigned']})</option>`;
+              allUsers.forEach(u => {
+                  if(u.role === 'agent') {
+                      html += `<option value="${u.id}">${u.email} (${assignCounts[u.id] || 0})</option>`;
+                  }
+              });
+          } else {
+              const sortedKeys = Object.keys(counts).sort();
+              sortedKeys.forEach(k => {
+                  if(!k) return;
+                  html += `<option value="${k}">${k} (${counts[k]})</option>`;
+              });
+          }
+          
+          el.innerHTML = html;
+          if(isAssign && current === '') el.value = 'unassigned';
+          else el.value = current;
+      };
+
+      buildOptions(stageCounts, 'f_stage');
+      buildOptions(cityCounts, 'f_city');
+      buildOptions(stateCounts, 'f_state');
+      buildOptions(indCounts, 'f_industry');
+      buildOptions(assignCounts, 'f_assign', true);
+  }
+
+  function applyFilters() {
+      const s_stage = document.getElementById('f_stage').value;
+      const s_city = document.getElementById('f_city').value;
+      const s_state = document.getElementById('f_state').value;
+      const s_industry = document.getElementById('f_industry').value;
+      const s_assign = document.getElementById('f_assign').value;
+
+      filteredLeads = allLeads.filter(l => {
+          if(s_stage && l.stage !== s_stage) return false;
+          if(s_city && l.cityClean !== s_city) return false;
+          if(s_state && l.stateExtracted !== s_state) return false;
+          if(s_industry && (l.industry || 'Unknown') !== s_industry) return false;
+          
+          if(s_assign === 'unassigned') {
+              if(l.assignedTo) return false;
+          } else if(s_assign && l.assignedTo !== s_assign) {
+              return false;
+          }
+          return true;
+      });
+
+      renderTable();
+  }
+
+  window.setSort = (key) => { 
+      if(sortKey === key) {
+          sortDesc = !sortDesc; 
+      } else {
+          sortKey = key;
+          sortDesc = true; 
+      }
+      renderTable(); 
+  };
+
+  function renderTable() {
+      const tbody = document.getElementById('leadList');
+      tbody.innerHTML = '';
+      document.getElementById('recordCount').textContent = `${filteredLeads.length} records`;
+      document.getElementById('selectAll').checked = false;
+      updateBulkState();
+
+      filteredLeads.sort((a,b) => {
+          let va = a[sortKey] || ''; 
+          let vb = b[sortKey] || '';
+          if (typeof va === 'string') va = va.toLowerCase();
+          if (typeof vb === 'string') vb = vb.toLowerCase();
+          
+          if(sortDesc) {
+              if(va < vb) return 1;
+              if(va > vb) return -1;
+          } else {
+              if(va < vb) return -1;
+              if(va > vb) return 1;
+          }
+          return 0;
+      });
+
+      filteredLeads.forEach(l => {
+          let actions = '';
+          if(l.assignedTo) {
+              actions += `<button class="btn sec" style="padding:4px 8px; font-size:11px; margin-right:6px;" onclick="unassignLead('${l.id}')">Unassign</button>`;
+          }
+          actions += `<button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteLead('${l.id}')">🗑</button>`;
+          
+          const assignDisplay = l.assignedTo ? l.assignedName : '<span style="color:#b91c1c">Unassigned</span>';
+
+          tbody.innerHTML += `
+            <tr>
+                <td style="text-align:center;"><input type="checkbox" class="lead-check" value="${l.id}" onclick="updateBulkState()"></td>
+                <td style="font-weight:600">${l.company || 'Unknown'}</td>
+                <td>${l.cityClean}</td>
+                <td>${l.stateExtracted}</td>
+                <td>${l.industry || '-'}</td>
+                <td style="font-size:12px">${assignDisplay}</td>
+                <td><span class="badge">${l.stage}</span></td>
+                <td style="text-align:right">${actions}</td>
+            </tr>
+          `;
+      });
+  }
+
+  function resetFilters() {
+      document.getElementById('f_stage').value = '';
+      document.getElementById('f_city').value = '';
+      document.getElementById('f_state').value = '';
+      document.getElementById('f_industry').value = '';
+      document.getElementById('f_assign').value = 'unassigned';
+      applyFilters();
+  }
+
+  function toggleAll(source) {
+      document.querySelectorAll('.lead-check').forEach(cb => cb.checked = source.checked);
+      updateBulkState();
+  }
+
+  function updateBulkState() {
+      const count = document.querySelectorAll('.lead-check:checked').length;
+      const btn = document.getElementById('btnBulkDelete');
+      if (count > 0) {
+          btn.style.display = 'inline-flex';
+          btn.textContent = `Delete Selected (${count})`;
+      } else {
+          btn.style.display = 'none';
+      }
+  }
+
+  function bulkDelete() {
+      const checked = document.querySelectorAll('.lead-check:checked');
+      if(checked.length === 0) return;
+      if(!confirm(`Delete ${checked.length} leads?`)) return;
+
+      const batch = db.batch();
+      checked.forEach(cb => batch.delete(db.collection('leads').doc(cb.value)));
+      batch.commit().then(() => alert('Deleted.'));
+  }
+
+  function assignLeads() {
+      const agentId = document.getElementById('assignUser').value;
+      if (!agentId) return alert('Select Agent');
+      
+      const checked = document.querySelectorAll('.lead-check:checked');
+      let targets = [];
+      
+      if(checked.length > 0) {
+          targets = Array.from(checked).map(cb => cb.value);
+      } else {
+          targets = filteredLeads.filter(l => !l.assignedTo).map(l => l.id);
+          if(targets.length === 0) return alert('No unassigned leads in current filter.');
+      }
+
+      if(!confirm(`Assign ${targets.length} leads?`)) return;
+
+      const batch = db.batch();
+      targets.forEach(id => {
+          batch.update(db.collection('leads').doc(id), { assignedTo: agentId });
+      });
+      batch.commit().then(() => { alert('Assigned.'); document.getElementById('selectAll').checked=false; });
+  }
+
+  function bulkUnassign() {
+      const checked = document.querySelectorAll('.lead-check:checked');
+      let targets = [];
+      
+      if(checked.length > 0) {
+          targets = Array.from(checked).map(cb => cb.value);
+      } else {
+          targets = filteredLeads.filter(l => l.assignedTo).map(l => l.id);
+          if(targets.length === 0) return alert('No assigned leads in current view.');
+      }
+
+      if(!confirm(`Unassign ${targets.length} leads?`)) return;
+
+      const batch = db.batch();
+      targets.forEach(id => {
+          batch.update(db.collection('leads').doc(id), { assignedTo: null });
+      });
+      batch.commit().then(() => { 
+          alert('Unassigned.'); 
+          document.getElementById('selectAll').checked=false; 
+      });
+  }
+
+  function parseCSVLine(text) {
+      let res = [], cell = '', quote = false;
+      for (let i = 0; i < text.length; i++) {
+          let c = text[i];
+          if (c === '"') quote = !quote;
+          else if (c === ',' && !quote) { res.push(cell.trim().replace(/^"|"$/g, '')); cell = ''; }
+          else cell += c;
+      }
+      res.push(cell.trim().replace(/^"|"$/g, ''));
+      return res;
+  }
+
+  function openImportModal() { document.getElementById('importModal').classList.add('open'); }
+  function closeImportModal() { document.getElementById('importModal').classList.remove('open'); }
+
+  function processImport() {
+    const txt = document.getElementById('importText').value;
+    if (!txt.trim()) return alert('Paste CSV data first.');
+    
+    const lines = txt.trim().split(/\r?\n/);
+    if (lines.length < 2) return alert('Invalid CSV.');
+    
+    const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+    
+    let count = 0;
+    const batch = db.batch(); 
+    
+    for (let i = 1; i < lines.length; i++) {
+        const row = parseCSVLine(lines[i]);
+        if (row.length < 2) continue;
+
+        const getVal = (keys) => {
+            const idx = headers.findIndex(h => keys.some(k => h.includes(k)));
+            return idx > -1 ? row[idx] : '';
+        };
+
+        let cityRaw = getVal(['city', 'location']);
+        let stateRaw = getVal(['state']);
+        
+        let finalCity = cityRaw;
+        if(stateRaw && !cityRaw.includes(stateRaw)) finalCity = `${cityRaw}, ${stateRaw}`;
+
+        const newRef = db.collection('leads').doc(); 
+        const lead = {
+            company: getVal(['company', 'business']) || 'Unknown',
+            phone: getVal(['phone']),
+            city: finalCity,
+            industry: getVal(['industry']),
+            gbp1: getVal(['gbp 1']),
+            gbp2: getVal(['gbp 2']),
+            gbp3: getVal(['gbp 3']),
+            recommendation: getVal(['recommendation', 'rec']),
+            website: getVal(['website']),
+            stage: 'New Lead',
+            nextAction: 'Call Attempt',
+            assignedTo: null,
+            createdAt: new Date()
+        };
+        batch.set(newRef, lead);
+        count++;
+    }
+    
+    batch.commit().then(() => {
+        alert(`Imported ${count} leads.`);
+        closeImportModal();
+        document.getElementById('importText').value = '';
+    });
+  }
+
+  function unassignLead(id) {
+      if(confirm('Unassign?')) db.collection('leads').doc(id).update({ assignedTo: null });
+  }
+  function deleteLead(id) {
+      if(confirm('Delete?')) db.collection('leads').doc(id).delete();
+  }
+  function createUser() {
+    const email = document.getElementById('newUserEmail').value;
+    const password = document.getElementById('newUserPass').value;
+    const role = document.getElementById('newUserRole').value;
+    if (!email || !password) return alert('Fill fields');
+    const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+    secondaryApp.auth().createUserWithEmailAndPassword(email, password)
+        .then((cred) => {
+            db.collection('users').doc(cred.user.uid).set({ email: email, role: role, createdAt: new Date() })
+            .then(() => { alert('User created!'); secondaryApp.delete(); });
+        }).catch(e => { alert(e.message); secondaryApp.delete(); });
+  }
+  function logout() { auth.signOut().then(() => window.location.href = 'index.html'); }
+</script>
+</body>
+</html>
