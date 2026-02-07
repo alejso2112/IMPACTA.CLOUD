@@ -576,36 +576,96 @@
       db.collection('users').doc(id).update({ name }).then(() => closeModal('editUserModal'));
   }
 
-  
   async function fetchHistory() {
       const tbody = document.getElementById('historyBody');
+      const callerSelect = document.getElementById('h_caller');
+      
       tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading History...</td></tr>';
+      
+      // 1. Get Date Range
       const year = parseInt(document.getElementById('h_year').value);
       const month = parseInt(document.getElementById('h_month').value);
       const day = parseInt(document.getElementById('h_day').value);
-      const caller = document.getElementById('h_caller').value;
+      
       const start = new Date(year, month, day);
       const end = new Date(year, month, day, 23, 59, 59);
 
-      let query = db.collectionGroup('activities').where('createdAt', '>=', start).where('createdAt', '<=', end);
-      if(caller !== 'all') query = query.where('createdBy', '==', caller);
+      // 2. Query ALL activities for this timeframe (Removed the 'createdBy' filter here)
+      // We need all records to calculate counts for every agent.
+      let query = db.collectionGroup('activities')
+                    .where('createdAt', '>=', start)
+                    .where('createdAt', '<=', end);
 
       try {
           const snap = await query.get();
-          const logs = [];
-          snap.forEach(doc => { let d=doc.data(); d._leadId=doc.ref.parent.parent.id; logs.push(d); });
-          logs.sort((a,b)=>b.createdAt.toDate()-a.createdAt.toDate());
+          const allLogs = [];
+          const counts = {};
+
+          // 3. Process Data & Calculate Counts
+          snap.forEach(doc => { 
+              let d = doc.data(); 
+              d._leadId = doc.ref.parent.parent.id; 
+              allLogs.push(d); 
+
+              // Tally count for this agent
+              const uid = d.createdBy;
+              counts[uid] = (counts[uid] || 0) + 1;
+          });
+
+          // 4. Update Dropdown Labels with Counts
+          Array.from(callerSelect.options).forEach(opt => {
+              if (opt.value === 'all') {
+                  opt.text = `All Agents (${allLogs.length})`;
+                  return;
+              }
+              
+              // Get base name from userMap to prevent duplicate counts (e.g. "John (5) (3)")
+              // If userMap isn't ready, split the existing text to remove old count
+              let baseName = opt.text;
+              if (userMap[opt.value]) {
+                  baseName = userMap[opt.value].name || userMap[opt.value].email;
+              } else if (opt.text.includes('(')) {
+                  baseName = opt.text.split(' (')[0];
+              }
+
+              const count = counts[opt.value] || 0;
+              opt.text = `${baseName} (${count})`;
+          });
+
+          // 5. Filter for Table Display based on current selection
+          const selectedCaller = callerSelect.value;
+          let displayLogs = allLogs;
+
+          if (selectedCaller !== 'all') {
+              displayLogs = allLogs.filter(log => log.createdBy === selectedCaller);
+          }
+
+          // Sort Descending
+          displayLogs.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
           
-          if(logs.length===0) return tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center">No activity found.</td></tr>';
+          if(displayLogs.length === 0) {
+              return tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center">No activity found for this selection.</td></tr>';
+          }
           
-          tbody.innerHTML = logs.map(log => {
-             const d = log.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-             const agent = userMap[log.createdBy] ? (userMap[log.createdBy].name || 'Unknown') : 'Unknown';
-             const l = allLeads.find(x=>x.id===log._leadId);
-             const lName = l ? l.company : 'ID: '+log._leadId.substr(0,5);
-             return `<tr><td style="font-family:monospace; color:var(--muted)">${d}</td><td style="font-weight:600">${agent}</td><td style="color:var(--brand)">${lName}</td><td><span class="status-pill" style="background:#f1f5f9; color:var(--ink)">${log.action}</span></td><td style="color:var(--muted)">${log.text||''}</td></tr>`;
+          // 6. Render Table
+          tbody.innerHTML = displayLogs.map(log => {
+              const d = log.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+              const agent = userMap[log.createdBy] ? (userMap[log.createdBy].name || 'Unknown') : 'Unknown';
+              const l = allLeads.find(x => x.id === log._leadId);
+              const lName = l ? l.company : 'ID: ' + log._leadId.substr(0,5);
+              return `<tr>
+                  <td style="font-family:monospace; color:var(--muted)">${d}</td>
+                  <td style="font-weight:600">${agent}</td>
+                  <td style="color:var(--brand)">${lName}</td>
+                  <td><span class="status-pill" style="background:#f1f5f9; color:var(--ink)">${log.action}</span></td>
+                  <td style="color:var(--muted)">${log.text||''}</td>
+              </tr>`;
           }).join('');
-      } catch(e) { console.error(e); tbody.innerHTML=`<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`; }
+
+      } catch(e) { 
+          console.error(e); 
+          tbody.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`; 
+      }
   }
 
   // IMPORT
