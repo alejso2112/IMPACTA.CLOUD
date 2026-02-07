@@ -255,7 +255,7 @@
              <textarea id="m_gbp3" readonly style="height:80px; resize:none;"></textarea>
           </div>
 
-          <div class="modal-grid"><label>Notes</label><textarea id="m_notes" readonly style="height:100px"></textarea></div>
+          <div class="modal-grid"><label>Lead/Contact Notes</label><textarea id="m_notes" readonly style="height:100px"></textarea></div>
         </div>
 
         <div class="modal-col right">
@@ -267,26 +267,29 @@
             </div>
           </div>
 
-          <div class="modal-grid">
-            <label style="color:var(--ink)">Log Activity</label>
-            <textarea id="logNote" placeholder="Result of call..."></textarea>
+                    <div style="margin-top:20px;">
+            <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Select Call Outcome</label>
+            <div class="quick-actions">
+                <button class="mini" onclick="quickSet('Attempting','Call Attempt')">Attempted</button>
+                <button class="mini" onclick="quickSet('Connected','Book 15-min')">Connected</button>
+                <button class="mini" onclick="quickSet('Booked – 15 Min Diagnostic','Confirm 15-min')">Booked 3-Point</button>
+                <button class="mini" onclick="quickSet('Sold - 48 Hour Fix','Sold 48-Hour Fix')">Sold 48</button>
+                <button class="mini" onclick="quickSet('Sold - RLD','Sold Rev Diagnostic')">Sold RLD</button>
+                <button class="mini" onclick="quickSet('Sold - PPA','Sold PPA')">Sold PPA</button>
+            </div>
           </div>
+
+          <br>
+    
           
           <div class="modal-grid" style="margin-top:10px">
              <label style="color:var(--ink)">Next Due</label>
              <input id="m_nextDue" type="datetime-local" />
           </div>
 
-          <div style="margin-top:20px;">
-            <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Quick Update</label>
-            <div class="quick-actions">
-                <button class="mini" onclick="quickSet('Attempting','Call Attempt')">Attempt</button>
-                <button class="mini" onclick="quickSet('Connected','Book 15-min')">Connected</button>
-                <button class="mini" onclick="quickSet('Booked – 15 Min Diagnostic','Confirm 15-min')">Booked</button>
-                <button class="mini" onclick="quickSet('Sold - 48 Hour Fix','Sold 48-Hour Fix')">Sold 48</button>
-                <button class="mini" onclick="quickSet('Sold - RLD','Sold Rev Diagnostic')">Sold RLD</button>
-                <button class="mini" onclick="quickSet('Sold - PPA','Sold PPA')">Sold PPA</button>
-            </div>
+          <div class="modal-grid">
+            <label style="color:var(--ink)">Call Notes</label>
+            <textarea id="logNote" placeholder="Result of call..."></textarea>
           </div>
 
           <button class="btn" id="btnSaveLog" style="width:100%; margin-top:20px;">Save & Next</button>
