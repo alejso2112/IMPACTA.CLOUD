@@ -17,9 +17,16 @@
     
     /* GLOBAL NO SELECT (Protect Data) */
     body{ margin:0; font-family:var(--sans); color:var(--ink); background: var(--bg); line-height:1.5; font-size: 14px; 
-      user-select: none; -webkit-user-select: none; /* Disable copy/highlight globally */
+      /* PREVENT HIGHLIGHTING/COPYING */
+      -webkit-user-select: none; 
+      -moz-user-select: none; 
+      -ms-user-select: none; 
+      user-select: none;
     }
     
+    /* Allow editing in inputs */
+    input, textarea, select { user-select: text; -webkit-user-select: text; }
+
     a{color:var(--brand); text-decoration:none}
     .wrap{max-width:1800px; margin:0 auto; padding:0 24px}
     
@@ -48,8 +55,7 @@
     .card .hd h2{margin:0; font-size:15px; font-weight:700; color:#fff;}
     .card .bd{padding:20px; flex:1;}
     
-    /* MAIN LAYOUT */
-    main{padding:24px 0 48px}
+    /* INPUTS */
     input, select, textarea{ width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.4); background:#fff; color:var(--ink); outline:none; font-family:var(--sans); font-size:14px; }
     input:focus, select:focus, textarea:focus{ border-color: #fff; box-shadow:0 0 0 3px rgba(255,255,255,0.25); }
     
@@ -60,8 +66,13 @@
     .tablewrap{ border:1px solid var(--line); border-radius:10px; background:#fff; margin-top:20px; color: var(--ink); width: 100%; overflow-x: auto; }
     table{ width:100%; border-collapse:collapse; }
     th, td{ padding:14px 12px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
-    th{ position:sticky; top:0; background:#f8fafc; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); cursor: pointer; white-space:nowrap; }
-    th:hover { color: var(--brand); }
+    
+    /* SORTABLE HEADERS */
+    th{ position:sticky; top:0; background:#f8fafc; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); cursor: pointer; white-space:nowrap; user-select: none; }
+    th:hover { color: var(--brand); background:#f1f5f9; }
+    th.sort-asc::after { content: " ▲"; color: var(--brand); }
+    th.sort-desc::after { content: " ▼"; color: var(--brand); }
+
     td.lead-col { font-weight:600; color:var(--brand-dark); min-width: 180px; }
     td.data-col { font-size:12px; color:#334155; min-width: 140px; }
     .lead-meta {font-weight:400; color:var(--muted); font-size:12px; display:block;}
@@ -73,7 +84,7 @@
 
     /* MODAL */
     .modal{ position:fixed; inset:0; background:rgba(15,23,42,.7); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px; z-index:100; 
-        /* ALLOW SELECT IN MODAL */
+        /* ALLOW SELECT IN MODAL (So they can copy/paste recs) */
         user-select: text; -webkit-user-select: text; 
     }
     .modal.open{display:flex}
@@ -127,7 +138,7 @@
     <div class="wrap">
       <div class="inner">
         <div class="brand">
-          <img src="img/logo-main-2026.png" class="logo" alt="IMPACTA" />
+          <div style="width:32px; height:32px; background:var(--brand); border-radius:6px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800;">I</div>
           <div>
             <h1>IMPACTA CRM</h1>
             <p id="userDisplay">Loading...</p>
@@ -177,16 +188,16 @@
           <table id="leadTable">
             <thead>
               <tr>
-                <th onclick="setSort('company')">Company / Lead</th>
-                <th onclick="setSort('phone')">Phone</th>
-                <th onclick="setSort('city')">City</th>
-                <th onclick="setSort('stage')">Stage</th>
-                <th onclick="setSort('nextAction')">Next Action</th>
+                <th id="th_company" onclick="setSort('company')">Company / Lead</th>
+                <th id="th_phone" onclick="setSort('phone')">Phone</th>
+                <th id="th_city" onclick="setSort('city')">City</th>
+                <th id="th_stage" onclick="setSort('stage')">Stage</th>
+                <th id="th_nextAction" onclick="setSort('nextAction')">Next Action</th>
                 <th>Rec</th>
                 <th>GBP 1</th>
                 <th>GBP 2</th>
                 <th>GBP 3</th>
-                <th onclick="setSort('nextDue')">Next Due</th>
+                <th id="th_nextDue" onclick="setSort('nextDue')">Next Due</th>
                 <th style="text-align:right">Actions</th>
               </tr>
             </thead>
@@ -267,7 +278,7 @@
             </div>
           </div>
 
-                    <div style="margin-top:20px;">
+          <div style="margin-top:20px;">
             <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Select Call Outcome</label>
             <div class="quick-actions">
                 <button class="mini" onclick="quickSet('Attempting','Call Attempt')">Attempted</button>
@@ -281,7 +292,6 @@
 
           <br>
     
-          
           <div class="modal-grid" style="margin-top:10px">
              <label style="color:var(--ink)">Next Due</label>
              <input id="m_nextDue" type="datetime-local" />
@@ -368,7 +378,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // --- PASTE YOUR FIREBASE CONFIG HERE ---
+  // --- FIREBASE CONFIG ---
   const firebaseConfig = {
     apiKey: "AIzaSyAd6SXuX3nNzoCr07ENc-u_QRU1Not_FAI",
     authDomain: "impactacrm.firebaseapp.com",
@@ -378,7 +388,6 @@
     appId: "1:323514822260:web:9eec9a85f865abb780ab21",
     measurementId: "G-DW3JFMDG6Y"
   };
-  // ---------------------------------------
 
   const app = firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
@@ -387,18 +396,20 @@
   let currentUser = null;
   let userRole = 'agent'; 
   let leads = [];
-  let filteredLeads = []; // Track filtered view for "Next" logic
-  let userMap = {}; // Maps UID -> User Data
+  let filteredLeads = []; 
+  let userMap = {}; 
   let activeLeadId = null;
-  let activityUnsub = null; // Unsub function for activity listener
-  let sortKey = 'nextDue'; // Sort by date
-  let sortDesc = true;     // Descending (Newest/Today -> Past)
+  let activityUnsub = null; 
+  let sortKey = 'nextDue'; 
+  let sortDesc = true;     
   let timerInt = null;
   let seconds = 0;
 
-  // Prevent copy outside modals
+  // Prevent copy outside modals (Extra Layer)
   document.addEventListener('copy', (e) => {
-      if (!e.target.closest('.modal')) e.preventDefault();
+      if (!e.target.closest('.modal')) {
+          e.preventDefault();
+      }
   });
 
   async function init() {
@@ -407,17 +418,10 @@
         currentUser = user;
         document.getElementById('userDisplay').textContent = user.email;
         
-        // Fetch All Users for Name Mapping
         db.collection('users').get().then(snap => {
-            snap.forEach(doc => {
-                userMap[doc.id] = doc.data();
-            });
-            
-            // Get Current Role
+            snap.forEach(doc => { userMap[doc.id] = doc.data(); });
             db.collection('users').doc(user.uid).get().then(doc => {
-                if(doc.exists) {
-                    userRole = doc.data().role || 'agent';
-                }
+                if(doc.exists) userRole = doc.data().role || 'agent';
                 fetchLeads();
             });
         });
@@ -427,7 +431,6 @@
     const sel = document.getElementById('filterStage');
     sel.innerHTML = `<option value="">All Stages</option>` + STAGES.map(s=>`<option value="${s}">${s}</option>`).join('');
     
-    // Bind filters
     document.getElementById('filterStage').onchange = render;
     document.getElementById('filterDue').onchange = render;
     document.getElementById('search').oninput = render;
@@ -435,7 +438,7 @@
     document.getElementById('btnCloseModal').onclick = () => { 
         document.getElementById('modal').classList.remove('open'); 
         stopTimer();
-        if(activityUnsub) activityUnsub(); // Clean up listener
+        if(activityUnsub) activityUnsub(); 
     };
   }
 
@@ -453,55 +456,66 @@
   }
 
   function render() {
+    // 1. UPDATE HEADER ICONS
+    document.querySelectorAll('th').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if(th.id === `th_${sortKey}`) {
+            th.classList.add(sortDesc ? 'sort-desc' : 'sort-asc');
+        }
+    });
+
     const filterStage = document.getElementById('filterStage').value;
     const filterDue = document.getElementById('filterDue').value;
     const search = document.getElementById('search').value.toLowerCase();
     
-    // Sort
+    // 2. GENERIC SORT LOGIC
     leads.sort((a,b) => {
         let va = a[sortKey]; 
         let vb = b[sortKey];
-        if(!va) return 1; if(!vb) return -1;
-        let timeA = va.toDate ? va.toDate().getTime() : new Date(va).getTime();
-        let timeB = vb.toDate ? vb.toDate().getTime() : new Date(vb).getTime();
-        return sortDesc ? (timeB - timeA) : (timeA - timeB);
+
+        // Handle Firestore Timestamps
+        if(va && va.toDate) va = va.toDate();
+        if(vb && vb.toDate) vb = vb.toDate();
+
+        // Handle Nulls (Always push nulls to bottom)
+        if (va === vb) return 0;
+        if (va === null || va === undefined) return 1;
+        if (vb === null || vb === undefined) return -1;
+
+        // Compare Types
+        let comparison = 0;
+        if (va instanceof Date && vb instanceof Date) {
+            comparison = va - vb;
+        } else if (typeof va === 'string' && typeof vb === 'string') {
+            comparison = va.localeCompare(vb);
+        } else {
+            // Default (numbers etc)
+            comparison = (va > vb) ? 1 : -1;
+        }
+
+        return sortDesc ? (comparison * -1) : comparison;
     });
 
-    // Date Logic
+    // 3. APPLY FILTERS
     const now = new Date();
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
     const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
     const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    // Apply Filters to Global filteredLeads
     filteredLeads = leads.filter(l => {
-        // Role check
-        if (userRole !== 'admin') {
-            if (l.assignedTo && l.assignedTo !== currentUser.uid) return false;
-        }
-
-        // Search check
+        if (userRole !== 'admin' && l.assignedTo && l.assignedTo !== currentUser.uid) return false;
         if(search && !JSON.stringify(l).toLowerCase().includes(search)) return false;
-        
-        // Stage check
         if(filterStage && l.stage !== filterStage) return false;
 
-        // Due Date Check
         if(filterDue !== 'all') {
-            if(!l.nextDue) return false; // Hide no-date items if filtering by date
+            if(!l.nextDue) return false; 
             const d = l.nextDue.toDate ? l.nextDue.toDate() : new Date(l.nextDue);
             
-            if(filterDue === 'today_past') {
-                if(d > todayEnd) return false;
-            } else if(filterDue === 'overdue') {
-                if(d >= now) return false;
-            } else if(filterDue === 'tomorrow') {
-                if(d < todayEnd || d > tomorrowEnd) return false;
-            } else if(filterDue === 'week') {
-                if(d < todayEnd || d > weekEnd) return false;
-            }
+            if(filterDue === 'today_past') { if(d > todayEnd) return false; }
+            else if(filterDue === 'overdue') { if(d >= now) return false; }
+            else if(filterDue === 'tomorrow') { if(d < todayEnd || d > tomorrowEnd) return false; }
+            else if(filterDue === 'week') { if(d < todayEnd || d > weekEnd) return false; }
         }
-
         return true;
     });
 
@@ -542,13 +556,13 @@
     }).join('');
   }
 
-  // Click-to-Sort Handler
+  // --- SORT HANDLER ---
   window.setSort = (key) => { 
       if(sortKey === key) {
-          sortDesc = !sortDesc; // Toggle
+          sortDesc = !sortDesc; 
       } else {
           sortKey = key;
-          sortDesc = true; // Default Descending
+          sortDesc = true; // Default Descending (Z-A or Newest)
       }
       render(); 
   };
@@ -558,7 +572,6 @@
     activeLeadId = id;
     const l = leads.find(x => x.id === id);
     
-    // FORMAT NAME: First Name + Last Initial
     const fName = l.firstName || '';
     const lName = l.lastName || '';
     const lInitial = lName.length > 0 ? lName.charAt(0).toUpperCase() + '.' : '';
@@ -581,14 +594,12 @@
     document.getElementById('m_notes').value = l.notes || '';
     document.getElementById('logNote').value = '';
     
-    // Default Next Due to NOW if empty
     let d;
     if(l.nextDue) {
        d = l.nextDue.toDate ? l.nextDue.toDate() : new Date(l.nextDue);
     } else {
-       d = new Date(); // Default to Today/Now
+       d = new Date(); 
     }
-    // Format for datetime-local
     const offset = d.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(d - offset)).toISOString().slice(0, 16);
     document.getElementById('m_nextDue').value = localISOTime;
@@ -596,7 +607,6 @@
     document.getElementById('callTimer').textContent = '00:00';
     stopTimer();
 
-    // Clean up previous listener
     if(activityUnsub) activityUnsub();
 
     activityUnsub = db.collection('leads').doc(id).collection('activities').orderBy('createdAt', 'desc').onSnapshot(snap => {
@@ -605,7 +615,6 @@
             const log = d.data();
             const date = log.createdAt ? new Date(log.createdAt.toDate()).toLocaleString() : '';
             
-            // CALLER LOGIC
             let caller = 'System';
             if(log.createdBy && userMap[log.createdBy]) {
                 const u = userMap[log.createdBy];
@@ -615,7 +624,6 @@
                 const last = parts.length > 1 ? parts[parts.length-1][0].toUpperCase() + '.' : '';
                 caller = `${first} ${last}`;
             } else if (log.createdBy) {
-                // Fallback to ID if map not ready or user missing
                 caller = 'Agent';
             }
 
@@ -627,14 +635,11 @@
     document.getElementById('modal').classList.add('open');
   };
 
-  // --- CALL HISTORY REPORT ---
   window.openHistory = () => {
       const tbody = document.getElementById('historyBody');
       tbody.innerHTML = '<tr><td colspan="5">Loading history...</td></tr>';
       document.getElementById('historyModal').classList.add('open');
 
-      // FIX: Removed .orderBy('createdAt') to prevent Firebase Index errors.
-      // We fetch all user logs and sort client-side.
       db.collectionGroup('activities')
         .where('createdBy', '==', currentUser.uid)
         .get()
@@ -642,18 +647,16 @@
             let logs = [];
             snap.forEach(doc => {
                 const d = doc.data();
-                d._leadId = doc.ref.parent.parent.id; // Capture Lead ID
+                d._leadId = doc.ref.parent.parent.id; 
                 logs.push(d);
             });
 
-            // Client-side Sort: Newest First
             logs.sort((a, b) => {
                 const tA = a.createdAt ? a.createdAt.toDate() : new Date(0);
                 const tB = b.createdAt ? b.createdAt.toDate() : new Date(0);
                 return tB - tA;
             });
 
-            // Take top 50
             const recentLogs = logs.slice(0, 50);
 
             tbody.innerHTML = '';
@@ -688,7 +691,6 @@
         });
   };
 
-  // Call Timer Logic
   document.getElementById('btnCallStart').onclick = () => {
     if(timerInt) return;
     const phone = document.getElementById('m_phone').value;
@@ -748,9 +750,7 @@
         });
     }
 
-    // NEXT LOGIC
     const currentIndex = filteredLeads.findIndex(l => l.id === activeLeadId);
-    
     if (currentIndex !== -1 && currentIndex < filteredLeads.length - 1) {
         const nextLead = filteredLeads[currentIndex + 1];
         openWork(nextLead.id); 
