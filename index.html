@@ -13,7 +13,14 @@
     button { width: 100%; padding: 12px; background: var(--brand); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     button:hover { opacity: 0.9; }
     .error { color: #b91c1c; font-size: 13px; margin-top: 10px; display: none; }
+    
+    /* ADDED: Style for the footer link area */
+    .legal-footer { margin-top: 25px; pt: 15px; border-top: 1px solid #f1f5f9; font-size: 13px; color: #64748b; }
+    .legal-footer a { color: var(--brand); text-decoration: none; font-weight: 500; }
+    .legal-footer a:hover { text-decoration: underline; }
   </style>
+    <link rel="icon" href="img/favicon-2025.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="card">
@@ -25,8 +32,14 @@
       <button type="submit" id="btn">Login</button>
       <div class="error" id="errorMsg"></div>
     </form>
+
+    <div class="legal-footer">
+        Need to review terms? <br>
+        <a href="https://form.jotform.com/260354129333048" target="_blank">View Contractor Agreement</a>
+    </div>
+
   </div>
-  <a href="https://form.jotform.com/260354129333048">Contractor Agreement</a>
+
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -76,6 +89,5 @@
         });
     });
   </script>
-  <a href="https://form.jotform.com/260354129333048">Contractor Agreement</a>
 </body>
 </html>
