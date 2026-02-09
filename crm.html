@@ -169,14 +169,15 @@
              <input id="search" placeholder="Filter by name..." style="border-color:var(--line);">
           </div>
           <div>
-             <label>Due Date</label>
-             <select id="filterDue" style="border-color:var(--line);">
-                 <option value="today_past">Due Today & Past</option>
-                 <option value="all">All Dates</option>
-                 <option value="tomorrow">Tomorrow</option>
-                 <option value="week">This Week</option>
-                 <option value="overdue">Overdue Only</option>
-             </select>
+              <label>Due Date</label>
+              <select id="filterDue" style="border-color:var(--line);">
+                  <option value="today_past">Due Today & Past</option>
+                  <option value="overdue">Overdue Only</option>
+                  <option value="no_date">New Leads</option> 
+                  <option value="tomorrow">Tomorrow</option>
+                  <option value="week">This Week</option>
+                  <option value="all">All Dates</option>
+              </select>
           </div>
           <div>
              <label>Filter Stage</label>
@@ -496,7 +497,7 @@
         return sortDesc ? (comparison * -1) : comparison;
     });
 
-    // 3. APPLY FILTERS
+// 3. APPLY FILTERS
     const now = new Date();
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
     const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
@@ -508,13 +509,22 @@
         if(filterStage && l.stage !== filterStage) return false;
 
         if(filterDue !== 'all') {
+            // NEW LOGIC START: Handle "No Due Date" specifically
+            if (filterDue === 'no_date') {
+                // Return true ONLY if there is no nextDue date
+                return !l.nextDue;
+            }
+
+            // For all other time-based filters, we require a date to exist
             if(!l.nextDue) return false; 
+            
             const d = l.nextDue.toDate ? l.nextDue.toDate() : new Date(l.nextDue);
             
             if(filterDue === 'today_past') { if(d > todayEnd) return false; }
             else if(filterDue === 'overdue') { if(d >= now) return false; }
             else if(filterDue === 'tomorrow') { if(d < todayEnd || d > tomorrowEnd) return false; }
             else if(filterDue === 'week') { if(d < todayEnd || d > weekEnd) return false; }
+            // NEW LOGIC END
         }
         return true;
     });
