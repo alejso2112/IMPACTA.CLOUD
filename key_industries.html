@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IMPACTA Industry Master Cheatsheet</title>
-      <link rel="icon" type="image/x-icon" href="img/logo-mobile-2025">
-    <link rel="icon" href="img/favicon-2025.png" type="image/png">
+  <link rel="icon" type="image/x-icon" href="img/logo-mobile-2025">
+  <link rel="icon" href="img/favicon-2025.png" type="image/png">
   <style>
     :root{
       --brand: #0c62ab;      /* IMPACTA blue */
@@ -27,6 +27,11 @@
       color: var(--ink);
       line-height: 1.5;
       padding-bottom: 60px;
+      
+      /* DISABLE SELECTION */
+      -webkit-user-select: none; /* Safari */
+      -ms-user-select: none; /* IE 10 and IE 11 */
+      user-select: none; /* Standard syntax */
     }
 
     /* Header */
@@ -133,14 +138,13 @@
       font-size: 12px;
     }
 
+    /* HIDE CONTENT ON PRINT */
     @media print {
-      body { background: white; }
-      .industry-section { break-inside: avoid; box-shadow: none; border: 2px solid #ddd; }
-      .header-content { justify-content: center; text-align: center; }
+      html, body { display: none; }
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <header>
   <div class="header-content">
@@ -628,6 +632,26 @@
   &copy; 2026 IMPACTA Business Solutions. All Rights Reserved. <br>
   Confidential Internal Document. Do Not Distribute.
 </div>
+
+<script>
+  // Block Right Click
+  document.addEventListener('contextmenu', event => event.preventDefault());
+
+  // Block Keyboard Shortcuts (Ctrl+C, Ctrl+P, Ctrl+S)
+  document.onkeydown = function(e) {
+    if (e.ctrlKey && 
+       (e.keyCode === 67 || 
+        e.keyCode === 86 || 
+        e.keyCode === 85 || 
+        e.keyCode === 117 ||
+        e.keyCode === 80 ||
+        e.keyCode === 83)) {
+        return false;
+    } else {
+        return true;
+    }
+};
+</script>
 
 </body>
 </html>
