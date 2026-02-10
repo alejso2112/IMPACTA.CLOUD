@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>IMPACTA CRM</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-      <link rel="icon" type="image/x-icon" href="img/logo-mobile-2025">
-    <link rel="icon" href="img/favicon-2025.png" type="image/png">
+  <link rel="icon" type="image/x-icon" href="img/logo-mobile-2025">
+  <link rel="icon" href="img/favicon-2025.png" type="image/png">
   <style>
     /* CORE VARIABLES */
     :root{
@@ -63,6 +63,7 @@
     
     .pill{ display:inline-block; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; text-align: center; }
     .pill.stage{background:#e0f2fe; color:#0369a1;}
+    .pill.industry{background:#f0fdf4; color:#15803d; margin-right:6px;}
     
     /* TABLE */
     .tablewrap{ border:1px solid var(--line); border-radius:10px; background:#fff; margin-top:20px; color: var(--ink); width: 100%; overflow-x: auto; }
@@ -171,14 +172,20 @@
         <div class="filters" style="display:flex; gap:12px; margin-top:20px; padding:15px; background:#fff; border-radius:10px; border:1px solid var(--line);">
           <div style="flex:1">
              <label>Search Leads</label>
-             <input id="search" placeholder="Filter by name..." style="border-color:var(--line);">
+             <input id="search" placeholder="Filter by name, company, or industry..." style="border-color:var(--line);">
+          </div>
+          <div style="min-width: 180px;">
+              <label>Filter Industry</label>
+              <select id="filterIndustry" style="border-color:var(--line);">
+                  <option value="">All Industries</option>
+                  </select>
           </div>
           <div>
               <label>Due Date</label>
               <select id="filterDue" style="border-color:var(--line);">
                   <option value="today_past">Due Today & Past</option>
                   <option value="overdue">Overdue Only</option>
-                  <option value="no_date">New Leads</option> 
+                  <option value="no_date">New Leads (No Date)</option> 
                   <option value="tomorrow">Tomorrow</option>
                   <option value="week">This Week</option>
                   <option value="all">All Dates</option>
@@ -195,14 +202,16 @@
             <thead>
               <tr>
                 <th id="th_company" onclick="setSort('company')">Company / Lead</th>
+                <th id="th_industry" onclick="setSort('industry')">Industry</th>
                 <th id="th_phone" onclick="setSort('phone')">Phone</th>
                 <th id="th_city" onclick="setSort('city')">City</th>
+                <th id="th_gbp1" onclick="setSort('gbp1')">GBP 1</th>
+                <th id="th_gbp2" onclick="setSort('gbp2')">GBP 2</th>
+                <th id="th_gbp3" onclick="setSort('gbp3')">GBP 3</th>
+                             <th>Rec</th>
                 <th id="th_stage" onclick="setSort('stage')">Stage</th>
                 <th id="th_nextAction" onclick="setSort('nextAction')">Next Action</th>
-                <th>Rec</th>
-                <th>GBP 1</th>
-                <th>GBP 2</th>
-                <th>GBP 3</th>
+   
                 <th id="th_nextDue" onclick="setSort('nextDue')">Next Due</th>
                 <th style="text-align:right">Actions</th>
               </tr>
@@ -254,7 +263,11 @@
           </div>
           <div class="row modal-grid">
             <div><label>Company</label><input id="m_company" readonly /></div>
+            <div><label>Industry</label><input id="m_industry" readonly /></div>
+          </div>
+          <div class="row modal-grid">
             <div><label>Phone</label><input id="m_phone" readonly /></div>
+            <div><label>City</label><input id="m_city" readonly /></div>
           </div>
           <div class="row modal-grid">
             <div><label>Email</label><input id="m_email" readonly /></div>
@@ -308,7 +321,7 @@
     
           <div class="modal-grid" style="margin-top:10px">
              <label style="color:var(--ink)">Next Due</label>
-             <input id="m_nextDue" type="datetime-local" style="max-width: 118px;" />
+             <input id="m_nextDue" type="datetime-local" style="max-width: 180px;" />
           </div>
 
           <div class="modal-grid">
@@ -338,8 +351,9 @@
                     <div><label>First Name</label><input id="e_first" /></div>
                     <div><label>Last Name</label><input id="e_last" /></div>
                 </div>
-                <div class="modal-grid">
-                    <label>Title</label><input id="e_title" />
+                <div class="row modal-grid">
+                    <div><label>Title</label><input id="e_title" /></div>
+                    <div><label>Industry</label><input id="e_industry" /></div>
                 </div>
                 <div class="row modal-grid">
                     <div><label>Company</label><input id="e_comp" /></div>
@@ -415,7 +429,7 @@
   let activeLeadId = null;
   let activityUnsub = null; 
   let sortKey = 'nextDue'; 
-  let sortDesc = true;      
+  let sortDesc = true;       
   let timerInt = null;
   let seconds = 0;
 
@@ -445,8 +459,10 @@
     const sel = document.getElementById('filterStage');
     sel.innerHTML = `<option value="">All Stages</option>` + STAGES.map(s=>`<option value="${s}">${s}</option>`).join('');
     
+    // LISTENERS FOR FILTERS
     document.getElementById('filterStage').onchange = render;
     document.getElementById('filterDue').onchange = render;
+    document.getElementById('filterIndustry').onchange = render; 
     document.getElementById('search').oninput = render;
 
     document.getElementById('btnCloseModal').onclick = () => { 
@@ -459,12 +475,31 @@
   function fetchLeads() {
     db.collection('leads').onSnapshot(snap => {
         const temp = [];
+        const industryCounts = {}; 
+
         snap.forEach(doc => {
             const data = doc.data();
             data.id = doc.id;
             temp.push(data); 
+            
+            // LOGIC: Count the industries
+            if(data.industry) {
+                const ind = data.industry.trim();
+                industryCounts[ind] = (industryCounts[ind] || 0) + 1;
+            }
         });
         leads = temp;
+        
+        // POPULATE INDUSTRY DROPDOWN WITH COUNTS
+        const indSelect = document.getElementById('filterIndustry');
+        const currentVal = indSelect.value;
+        const sortedIndustries = Object.keys(industryCounts).sort();
+        
+        indSelect.innerHTML = `<option value="">All Industries</option>` + 
+            sortedIndustries.map(i => `<option value="${i}">${i} (${industryCounts[i]})</option>`).join('');
+        
+        indSelect.value = currentVal; // Restore selection if it existed
+
         render();
     });
   }
@@ -480,6 +515,7 @@
 
     const filterStage = document.getElementById('filterStage').value;
     const filterDue = document.getElementById('filterDue').value;
+    const filterInd = document.getElementById('filterIndustry').value;
     const search = document.getElementById('search').value.toLowerCase();
     
     // 2. GENERIC SORT LOGIC
@@ -503,7 +539,6 @@
         } else if (typeof va === 'string' && typeof vb === 'string') {
             comparison = va.localeCompare(vb);
         } else {
-            // Default (numbers etc)
             comparison = (va > vb) ? 1 : -1;
         }
 
@@ -519,19 +554,27 @@
     filteredLeads = leads.filter(l => {
         if (userRole !== 'admin' && l.assignedTo && l.assignedTo !== currentUser.uid) return false;
         
-        // --- STRICT FILTER: NEVER SHOW DISQUALIFIED IN CRM.HTML ---
+        // STRICT FILTER: NEVER SHOW DISQUALIFIED IN CRM.HTML
         if (l.stage === 'Disqualified') return false; 
         
-        if(search && !JSON.stringify(l).toLowerCase().includes(search)) return false;
+        // SEARCH
+        if(search) {
+             const str = JSON.stringify(l).toLowerCase();
+             if(!str.includes(search)) return false;
+        }
+
+        // STAGE FILTER
         if(filterStage && l.stage !== filterStage) return false;
 
+        // INDUSTRY FILTER
+        if(filterInd && l.industry !== filterInd) return false;
+
+        // DUE DATE FILTER
         if(filterDue !== 'all') {
-            // Handle "No Due Date" specifically
             if (filterDue === 'no_date') {
                 return !l.nextDue;
             }
 
-            // For all other time-based filters, we require a date to exist
             if(!l.nextDue) return false; 
             
             const d = l.nextDue.toDate ? l.nextDue.toDate() : new Date(l.nextDue);
@@ -561,17 +604,23 @@
             next = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             if(d < new Date()) style = 'color:#b91c1c; font-weight:700';
         }
+        
+        const indPill = l.industry ? `<span class="pill industry">${l.industry}</span>` : '';
+
         return `
         <tr>
             <td class="lead-col">${l.company || 'Unknown'}<span class="lead-meta">${l.firstName || ''} ${l.lastName || ''}</span></td>
+            <td class="data-col">${indPill}</td>
             <td>${l.phone || '-'}</td>
             <td>${l.city || '-'}</td>
-            <td><span class="pill stage">${l.stage}</span></td>
-            <td>${l.nextAction || '-'}</td>
-            <td class="data-col">${l.recommendation || '-'}</td>
             <td class="data-col">${l.gbp1 || '-'}</td>
             <td class="data-col">${l.gbp2 || '-'}</td>
             <td class="data-col">${l.gbp3 || '-'}</td>
+
+                        <td class="data-col">${l.recommendation || '-'}</td>
+            <td><span class="pill stage">${l.stage}</span></td>
+            <td>${l.nextAction || '-'}</td>
+
             <td style="${style}">${next}</td>
             <td style="text-align:right">
                 <button class="mini" onclick="openWork('${l.id}')">Work</button>
@@ -587,7 +636,7 @@
           sortDesc = !sortDesc; 
       } else {
           sortKey = key;
-          sortDesc = true; // Default Descending (Z-A or Newest)
+          sortDesc = true; // Default Descending
       }
       render(); 
   };
@@ -599,18 +648,17 @@
     
     const fName = l.firstName || '';
     const lName = l.lastName || '';
-    
-    // --- CHANGE: SHOW FULL NAME ---
     const displayName = `${fName} ${lName}`.trim();
 
     document.getElementById('m_name').value = displayName;
     document.getElementById('m_title').value = l.title || ''; 
     document.getElementById('m_company').value = l.company || '';
+    document.getElementById('m_industry').value = l.industry || ''; 
     document.getElementById('m_phone').value = l.phone || '';
+    document.getElementById('m_city').value = l.city || ''; 
     document.getElementById('m_email').value = l.email || '';
     document.getElementById('m_stage').value = l.stage || 'New Lead';
     
-    // FIX: Always reset the Outcome selector to 'Call Attempt' for a new interaction.
     document.getElementById('m_nextAction').value = 'Call Attempt';
     
     document.getElementById('m_rec').value = l.recommendation || '';
@@ -760,48 +808,29 @@
     const note = document.getElementById('logNote').value;
     const currentLead = leads.find(l => l.id === activeLeadId);
 
-    // --- WARNING LOGIC (QUALITY CONTROL) ---
-    
-    // 1. Data Integrity: Check if Next Due was updated from previous value
+    // --- WARNING LOGIC ---
     let dueUpdated = false;
     const newDueTime = nextDueVal ? new Date(nextDueVal).getTime() : 0;
     const oldDueTime = currentLead.nextDue && currentLead.nextDue.toDate ? currentLead.nextDue.toDate().getTime() : 0;
-    
-    // Allow small variance (e.g. 1 min) or check strict inequality
     if (Math.abs(newDueTime - oldDueTime) > 60000) dueUpdated = true;
 
-    // RULE 1: Call outcome selected (not default 'Call Attempt') and next due hasn't been updated
-    // Note: This forces the rep to re-schedule a lead if they interacted with it.
-    // Exception: X outcomes don't need a future date.
     if (nextAct !== 'Call Attempt' && !dueUpdated && !nextAct.startsWith('X')) {
         alert("⚠️ QUALITY WARNING: You selected a new outcome but did not update the Next Due Date.\n\nWhen did you book the next step for?");
         return;
     }
-
-    // RULE 2: Call outcome hasn't been selected (is Call Attempt) and next due HAS been updated
-    // Note: Moving a date without logging an outcome implies "kicking the can" without a reason.
     if (nextAct === 'Call Attempt' && dueUpdated) {
         alert("⚠️ QUALITY WARNING: You changed the date but left the Outcome as 'Call Attempt'.\n\nPlease select a clearer outcome (e.g., Nurture, Reschedule) or clarify in notes.");
         return;
     }
-
-    // RULE 4 (High Priority): Outcome starts with X -> MUST have note
-    // Moved ABOVE Rule 3 to ensures the specific "Critical" message triggers for X outcomes.
     if (nextAct.startsWith('X') && !note.trim()) {
         alert("⚠️ CRITICAL: You are disqualifying a lead. You MUST add a note explaining why.");
         return;
     }
-
-    // RULE 3: Call outcome is selected but no note added
-    // This catches everything else (Connected, Booked, etc.)
     if (nextAct !== 'Call Attempt' && !note.trim()) {
         alert("⚠️ QUALITY WARNING: Outcome selected but no note added.\n\nPlease type a brief result of the interaction.");
         return;
     }
 
-    // --- END WARNING LOGIC ---
-
-    // AUTO-UPDATE STATUS FOR 'X' OUTCOMES
     if (nextAct.startsWith('X')) {
         stage = 'Disqualified';
     }
@@ -848,6 +877,7 @@
       document.getElementById('e_first').value = l.firstName;
       document.getElementById('e_last').value = l.lastName;
       document.getElementById('e_title').value = l.title || '';
+      document.getElementById('e_industry').value = l.industry || ''; // NEW
       document.getElementById('e_comp').value = l.company;
       document.getElementById('e_phone').value = l.phone;
       document.getElementById('e_email').value = l.email;
@@ -867,6 +897,7 @@
           firstName: document.getElementById('e_first').value,
           lastName: document.getElementById('e_last').value,
           title: document.getElementById('e_title').value,
+          industry: document.getElementById('e_industry').value, // NEW
           company: document.getElementById('e_comp').value,
           phone: document.getElementById('e_phone').value,
           email: document.getElementById('e_email').value,
