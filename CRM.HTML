@@ -239,6 +239,9 @@
                 <option value="Reschedule">Reschedule</option>
                 <option value="Nurture">Nurture</option>
                 <option value="Disqualify">Disqualify</option>
+                <option value="X - Disqualify">X - Disqualify</option>
+                <option value="X - DNC">X - DNC</option>
+                <option value="X - Bad Phone">X - Bad Phone</option>
             </select>
         </div>
       </div>
@@ -293,6 +296,11 @@
                 <button class="mini" onclick="quickSet('Sold - 48 Hour Fix','Sold 48-Hour Fix')">Sold 48</button>
                 <button class="mini" onclick="quickSet('Sold - RLD','Sold Rev Diagnostic')">Sold RLD</button>
                 <button class="mini" onclick="quickSet('Sold - PPA','Sold PPA')">Sold PPA</button>
+            </div>
+            <div class="quick-actions" style="margin-top:8px;">
+                <button class="mini" style="border-color:#ef4444; color:#b91c1c;" onclick="quickSet('Disqualified','X - Disqualify')">X Disqualify</button>
+                <button class="mini" style="border-color:#ef4444; color:#b91c1c;" onclick="quickSet('Disqualified','X - DNC')">X DNC</button>
+                <button class="mini" style="border-color:#ef4444; color:#b91c1c;" onclick="quickSet('Disqualified','X - Bad Phone')">X Bad Phone</button>
             </div>
           </div>
 
@@ -407,7 +415,7 @@
   let activeLeadId = null;
   let activityUnsub = null; 
   let sortKey = 'nextDue'; 
-  let sortDesc = true;     
+  let sortDesc = true;      
   let timerInt = null;
   let seconds = 0;
 
@@ -433,7 +441,7 @@
         });
     });
 
-    const STAGES = ["New Lead", "Attempting", "Connected", "Booked – 15 Min Diagnostic", "Held – 15 Min Diagnostic", "No-Show", "Reschedule", "Sold - 48 Hour Fix", "Sold - RLD", "Sold - PPA", "Disqualified", "Nurture"];
+    const STAGES = ["New Lead", "Attempting", "Connected", "Booked – 15 Min Diagnostic", "Held – 15 Min Diagnostic", "No-Show", "Reschedule", "Sold - 48 Hour Fix", "Sold - RLD", "Sold - PPA", "Nurture"];
     const sel = document.getElementById('filterStage');
     sel.innerHTML = `<option value="">All Stages</option>` + STAGES.map(s=>`<option value="${s}">${s}</option>`).join('');
     
@@ -510,13 +518,16 @@
 
     filteredLeads = leads.filter(l => {
         if (userRole !== 'admin' && l.assignedTo && l.assignedTo !== currentUser.uid) return false;
+        
+        // --- STRICT FILTER: NEVER SHOW DISQUALIFIED IN CRM.HTML ---
+        if (l.stage === 'Disqualified') return false; 
+        
         if(search && !JSON.stringify(l).toLowerCase().includes(search)) return false;
         if(filterStage && l.stage !== filterStage) return false;
 
         if(filterDue !== 'all') {
-            // NEW LOGIC START: Handle "No Due Date" specifically
+            // Handle "No Due Date" specifically
             if (filterDue === 'no_date') {
-                // Return true ONLY if there is no nextDue date
                 return !l.nextDue;
             }
 
@@ -529,7 +540,6 @@
             else if(filterDue === 'overdue') { if(d >= now) return false; }
             else if(filterDue === 'tomorrow') { if(d < todayEnd || d > tomorrowEnd) return false; }
             else if(filterDue === 'week') { if(d < todayEnd || d > weekEnd) return false; }
-            // NEW LOGIC END
         }
         return true;
     });
@@ -589,8 +599,9 @@
     
     const fName = l.firstName || '';
     const lName = l.lastName || '';
-    const lInitial = lName.length > 0 ? lName.charAt(0).toUpperCase() + '.' : '';
-    const displayName = `${fName} ${lInitial}`.trim();
+    
+    // --- CHANGE: SHOW FULL NAME ---
+    const displayName = `${fName} ${lName}`.trim();
 
     document.getElementById('m_name').value = displayName;
     document.getElementById('m_title').value = l.title || ''; 
@@ -598,7 +609,9 @@
     document.getElementById('m_phone').value = l.phone || '';
     document.getElementById('m_email').value = l.email || '';
     document.getElementById('m_stage').value = l.stage || 'New Lead';
-    document.getElementById('m_nextAction').value = l.nextAction || 'Call Attempt';
+    
+    // FIX: Always reset the Outcome selector to 'Call Attempt' for a new interaction.
+    document.getElementById('m_nextAction').value = 'Call Attempt';
     
     document.getElementById('m_rec').value = l.recommendation || '';
     document.getElementById('m_website').value = l.website || '';
@@ -741,10 +754,57 @@
   };
 
   document.getElementById('btnSaveLog').onclick = () => {
-    const stage = document.getElementById('m_stage').value;
+    let stage = document.getElementById('m_stage').value;
     const nextAct = document.getElementById('m_nextAction').value;
     const nextDueVal = document.getElementById('m_nextDue').value;
     const note = document.getElementById('logNote').value;
+    const currentLead = leads.find(l => l.id === activeLeadId);
+
+    // --- WARNING LOGIC (QUALITY CONTROL) ---
+    
+    // 1. Data Integrity: Check if Next Due was updated from previous value
+    let dueUpdated = false;
+    const newDueTime = nextDueVal ? new Date(nextDueVal).getTime() : 0;
+    const oldDueTime = currentLead.nextDue && currentLead.nextDue.toDate ? currentLead.nextDue.toDate().getTime() : 0;
+    
+    // Allow small variance (e.g. 1 min) or check strict inequality
+    if (Math.abs(newDueTime - oldDueTime) > 60000) dueUpdated = true;
+
+    // RULE 1: Call outcome selected (not default 'Call Attempt') and next due hasn't been updated
+    // Note: This forces the rep to re-schedule a lead if they interacted with it.
+    // Exception: X outcomes don't need a future date.
+    if (nextAct !== 'Call Attempt' && !dueUpdated && !nextAct.startsWith('X')) {
+        alert("⚠️ QUALITY WARNING: You selected a new outcome but did not update the Next Due Date.\n\nWhen did you book the next step for?");
+        return;
+    }
+
+    // RULE 2: Call outcome hasn't been selected (is Call Attempt) and next due HAS been updated
+    // Note: Moving a date without logging an outcome implies "kicking the can" without a reason.
+    if (nextAct === 'Call Attempt' && dueUpdated) {
+        alert("⚠️ QUALITY WARNING: You changed the date but left the Outcome as 'Call Attempt'.\n\nPlease select a clearer outcome (e.g., Nurture, Reschedule) or clarify in notes.");
+        return;
+    }
+
+    // RULE 4 (High Priority): Outcome starts with X -> MUST have note
+    // Moved ABOVE Rule 3 to ensures the specific "Critical" message triggers for X outcomes.
+    if (nextAct.startsWith('X') && !note.trim()) {
+        alert("⚠️ CRITICAL: You are disqualifying a lead. You MUST add a note explaining why.");
+        return;
+    }
+
+    // RULE 3: Call outcome is selected but no note added
+    // This catches everything else (Connected, Booked, etc.)
+    if (nextAct !== 'Call Attempt' && !note.trim()) {
+        alert("⚠️ QUALITY WARNING: Outcome selected but no note added.\n\nPlease type a brief result of the interaction.");
+        return;
+    }
+
+    // --- END WARNING LOGIC ---
+
+    // AUTO-UPDATE STATUS FOR 'X' OUTCOMES
+    if (nextAct.startsWith('X')) {
+        stage = 'Disqualified';
+    }
 
     const updateData = {
         stage: stage,
