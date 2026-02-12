@@ -14,13 +14,12 @@
     button:hover { opacity: 0.9; }
     .error { color: #b91c1c; font-size: 13px; margin-top: 10px; display: none; }
     
-    /* ADDED: Style for the footer link area */
-    .legal-footer { margin-top: 25px; pt: 15px; border-top: 1px solid #f1f5f9; font-size: 13px; color: #64748b; }
+    .legal-footer { margin-top: 25px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 13px; color: #64748b; }
     .legal-footer a { color: var(--brand); text-decoration: none; font-weight: 500; }
     .legal-footer a:hover { text-decoration: underline; }
   </style>
-    <link rel="icon" href="img/favicon-2025.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon-2025.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="card">
@@ -44,8 +43,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <script>
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyAd6SXuX3nNzoCr07ENc-u_QRU1Not_FAI",
     authDomain: "impactacrm.firebaseapp.com",
@@ -55,39 +53,74 @@
     appId: "1:323514822260:web:9eec9a85f865abb780ab21",
     measurementId: "G-DW3JFMDG6Y"
   };
-    // ---------------------------------------
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('btn');
-      const err = document.getElementById('errorMsg');
-      btn.textContent = 'Loading...';
-      err.style.display = 'none';
+  document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn');
+    const err = document.getElementById('errorMsg');
+    
+    btn.textContent = 'Loading...';
+    btn.disabled = true;
+    err.style.display = 'none';
 
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          // Check role in Firestore 'users' collection
-          db.collection('users').doc(userCredential.user.uid).get().then((doc) => {
-            if (doc.exists && doc.data().role === 'admin') {
-              window.location.href = 'admin.html';
-            } else {
-              window.location.href = 'crm.html';
-            }
-          });
-        })
-        .catch((error) => {
-          err.textContent = error.message;
-          err.style.display = 'block';
-          btn.textContent = 'Login';
+    auth.signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        const uid = userCredential.user.uid;
+        
+        // --- BATCH WRITE: Update Profile AND Log Activity ---
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(uid);
+        
+        // 1. Ensure User Profile Exists (Self-Healing)
+        batch.set(userRef, {
+            email: email,
+            lastLogin: new Date(),
+            // Default to 'agent' if role is missing
+        }, { merge: true });
+
+        // 2. Create a "Login" Activity Record (So Admin sees it in History)
+        // We store this under the user's ID so the Admin Console can find it.
+        const activityRef = userRef.collection('activities').doc();
+        batch.set(activityRef, {
+            action: "Login",
+            text: "Agent logged into CRM",
+            createdAt: new Date(),
+            createdBy: uid
         });
-    });
-  </script>
+
+        batch.commit()
+          .then(() => redirectUser(uid))
+          .catch(e => {
+             console.error("Sync failed:", e);
+             // Even if sync fails, let them in!
+             redirectUser(uid);
+          });
+      })
+      .catch((error) => {
+        console.error(error);
+        err.textContent = "Login Failed: " + error.message;
+        err.style.display = 'block';
+        btn.textContent = 'Login';
+        btn.disabled = false;
+      });
+  });
+
+  function redirectUser(uid) {
+     db.collection('users').doc(uid).get().then((doc) => {
+        if (doc.exists && doc.data().role === 'admin') {
+           window.location.href = 'admin.html';
+        } else {
+           window.location.href = 'crm.html';
+        }
+     });
+  }
+</script>
 </body>
 </html>
