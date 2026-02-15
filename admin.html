@@ -1,939 +1,613 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>IMPACTA ADMIN CONSOLE</title>
-    <link rel="icon" type="image/x-icon" href="img/logo-mobile-2025">
-    <link rel="icon" href="img/favicon-2025.png" type="image/png">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* --- STRATEGIC STYLING --- */
-        :root {
-            --brand: #0c62ab;
-            --brand-dark: #094a80;
-            --ink: #0f172a;
-            --muted: #64748b;
-            --line: #e2e8f0;
-            --bg: #f8fafc;
-            --radius: 12px;
-            --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IMPACTA ADMIN CONSOLE</title>
+  <link rel="icon" type="image/x-icon" href="img/logo-mobile-2025">
+  <link rel="icon" href="img/favicon-2025.png" type="image/png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* --- STRATEGIC STYLING --- */
+    :root{
+      --brand:#0c62ab; --brand-dark:#094a80; --ink:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --bg:#f8fafc; --radius:12px;
+      --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    
+    body{ margin:0; font-family:var(--sans); color:var(--ink); background: var(--bg); line-height:1.5; font-size: 14px; }
+    
+    /* UTILITIES */
+    .wrap{max-width:1600px; margin:0 auto; padding:0 24px}
+    .flex{display:flex; align-items:center; gap:12px}
+    .col{flex-direction:column; align-items:flex-start}
+    
+    /* TOPBAR */
+    .topbar{ position:sticky; top:0; z-index:50; border-bottom:1px solid var(--line); background:#fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .topbar .inner{ padding:14px 0; display:flex; justify-content:space-between; align-items:center; }
+    .brand h1 { margin:0; font-size:20px; font-weight:800; color:var(--brand); letter-spacing: -0.02em; }
+    .brand p { margin:0; font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;}
+    
+    /* BUTTONS */
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:8px 16px; border-radius:8px; border:1px solid transparent; background:var(--brand); color:#fff; font-weight:600; font-size:13px; cursor:pointer; transition:all .15s ease; }
+    .btn:hover{background:var(--brand-dark)}
+    .btn.secondary{background:#fff; color:var(--ink); border:1px solid var(--line);}
+    .btn.secondary:hover{background:#f1f5f9; border-color:#cbd5e1}
+    .btn.danger{background:#fff; color:#b91c1c; border:1px solid #fecaca;}
+    .btn.danger:hover{background:#fef2f2; border-color:#b91c1c}
 
-        * {
-            box-sizing: border-box
-        }
+    /* CARDS */
+    .card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); overflow:hidden; margin-bottom:24px; }
+    .card .hd{ padding:16px 24px; border-bottom:1px solid var(--line); background:#f8fafc; display:flex; justify-content:space-between; align-items:center; }
+    .card .hd h2{ margin:0; font-size:16px; font-weight:700; color:var(--ink); }
+    .card .bd{ padding:24px; }
 
-        body {
-            margin: 0;
-            font-family: var(--sans);
-            color: var(--ink);
-            background: var(--bg);
-            line-height: 1.5;
-            font-size: 14px;
-        }
+    /* FILTERS */
+    .filter-bar { display:grid; grid-template-columns: repeat(5, 1fr) auto; gap:10px; margin-bottom:16px; padding:16px; background:#f8fafc; border:1px solid var(--line); border-radius:8px; align-items:end; }
+    .filter-group label { display:block; font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; text-transform:uppercase; }
+    select, input { width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--line); font-size:13px; background:#fff; color:var(--ink); outline:none; }
+    select:focus, input:focus { border-color:var(--brand); ring:2px var(--brand); }
 
-        /* UTILITIES */
-        .wrap {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 0 24px
-        }
+    .filters { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; background:#f1f5f9; padding:16px; border-radius:8px; border:1px solid var(--line); margin-bottom:20px; }
 
-        .flex {
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
+    /* TABLES */
+    .tablewrap{ width:100%; overflow-x:auto; border:1px solid var(--line); border-radius:8px; }
+    table{ width:100%; border-collapse:collapse; background:#fff; }
+    th, td{ padding:12px 16px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:top; }
+    th{ background:#f8fafc; font-weight:700; color:var(--muted); text-transform:uppercase; font-size:11px; white-space:nowrap; position:sticky; top:0; z-index:10; cursor:pointer;}
+    th:hover { color:var(--brand); }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:#f8fafc; }
+    
+    .status-pill { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; text-transform:uppercase; background:#e0f2fe; color:#0369a1; }
+    .badge { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; background:#e2e8f0; }
+    .badge.admin { background:#dbeafe; color:#1e40af; }
+    input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 
-        .col {
-            flex-direction: column;
-            align-items: flex-start
-        }
+    /* REPORT TABLE SPECIFICS */
+    .report-cell { text-align: center; font-variant-numeric: tabular-nums; }
+    .report-total { font-weight: 800; color: var(--brand); background: #f1f5f9; text-align: center; }
+    .report-day-header { text-align: center; min-width: 30px; }
 
-        /* TOPBAR */
-        .topbar {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            border-bottom: 1px solid var(--line);
-            background: #fff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+    /* MODAL */
+    .modal { position:fixed; inset:0; background:rgba(15,23,42,.7); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px; z-index:1000; }
+    .modal.open { display:flex; }
+    .modal .panel { width:min(500px, 95%); background:#fff; border-radius:12px; border:1px solid var(--line); overflow:hidden; display:flex; flex-direction:column; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); }
+    .modal .hd { padding:16px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:#fff; }
+    .modal .bd { padding:24px; }
+    textarea.import-area { width:100%; height:200px; padding:12px; border:1px solid var(--line); border-radius:8px; font-family:var(--sans); font-size:13px; resize:vertical; outline:none; background:#f8fafc; }
 
-        .topbar .inner {
-            padding: 14px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .brand h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--brand);
-            letter-spacing: -0.02em;
-        }
-
-        .brand p {
-            margin: 0;
-            font-size: 11px;
-            color: var(--muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* BUTTONS */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            background: var(--brand);
-            color: #fff;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all .15s ease;
-        }
-
-        .btn:hover {
-            background: var(--brand-dark)
-        }
-
-        .btn.secondary {
-            background: #fff;
-            color: var(--ink);
-            border: 1px solid var(--line);
-        }
-
-        .btn.secondary:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1
-        }
-
-        .btn.danger {
-            background: #fff;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
-        }
-
-        .btn.danger:hover {
-            background: #fef2f2;
-            border-color: #b91c1c
-        }
-
-        /* VERIFICATION BADGES */
-        .verify-btn { padding: 4px 8px; font-size: 11px; background: #fff; border: 1px solid var(--line); cursor: pointer; border-radius: 4px; }
-        .verify-btn:hover { background: #f0f9ff; border-color: var(--brand); color: var(--brand); }
-        .verify-actions { display: none; gap: 4px; }
-        .verified-badge { color: #16a34a; font-size: 12px; margin-left: 4px; cursor: help; }
-
-
-        /* CARDS */
-        .card {
-            background: #fff;
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        .card .hd {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--line);
-            background: #f8fafc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card .hd h2 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-
-        .card .bd {
-            padding: 24px;
-        }
-
-        /* FILTERS (RESTORED LEAD DATABASE STYLE) */
-        .filter-bar {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr) auto;
-            gap: 10px;
-            margin-bottom: 16px;
-            padding: 16px;
-            background: #f8fafc;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            align-items: end;
-        }
-
-        .filter-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748b;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-
-        select,
-        input {
-            width: 100%;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--line);
-            font-size: 13px;
-            background: #fff;
-            color: var(--ink);
-            outline: none;
-        }
-
-        select:focus,
-        input:focus {
-            border-color: var(--brand);
-            ring: 2px var(--brand);
-        }
-
-        /* GENERAL FILTERS (History/Personnel) */
-        .filters {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-            background: #f1f5f9;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--line);
-            margin-bottom: 20px;
-        }
-
-        /* TABLES */
-        .tablewrap {
-            width: 100%;
-            overflow-x: auto;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #fff;
-        }
-
-        th,
-        td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--line);
-            text-align: left;
-            font-size: 13px;
-            vertical-align: middle; /* Changed to middle for button alignment */
-        }
-
-        th {
-            background: #f8fafc;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            font-size: 11px;
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            cursor: pointer;
-        }
-
-        th:hover {
-            color: var(--brand);
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background: #f8fafc;
-        }
-
-        .status-pill {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            background: #e0f2fe;
-            color: #0369a1;
-        }
-
-        .badge {
-            padding: 2px 8px;
-            border-radius: 99px;
-            font-size: 11px;
-            font-weight: 700;
-            background: #e2e8f0;
-        }
-
-        .badge.admin {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        /* MODAL */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, .7);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 1000;
-        }
-
-        .modal.open {
-            display: flex;
-        }
-
-        .modal .panel {
-            width: min(500px, 95%);
-            background: #fff;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-
-        .modal .hd {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--line);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-        }
-
-        .modal .bd {
-            padding: 24px;
-        }
-
-        textarea.import-area {
-            width: 100%;
-            height: 200px;
-            padding: 12px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            font-family: var(--sans);
-            font-size: 13px;
-            resize: vertical;
-            outline: none;
-            background: #f8fafc;
-        }
-        
-        .step { margin-bottom: 16px; padding:12px; background:#f1f5f9; border-radius:8px; border:1px solid var(--line); }
-        .step h4 { margin:0 0 8px 0; font-size:13px; font-weight:700; color:var(--brand); }
-
-        .loading {
-            color: var(--muted);
-            font-style: italic;
-            padding: 20px;
-            text-align: center;
-        }
-    </style>
+    .loading { color:var(--muted); font-style:italic; padding:20px; text-align:center; }
+  </style>
 </head>
 
 <body>
 
-    <div class="topbar">
-        <div class="wrap">
-            <div class="inner">
-                <div class="brand">
-                    <h1>IMPACTA ADMIN</h1>
-                    <p>Strategic Revenue Console</p>
-                </div>
-                <div class="flex">
-                    <span id="adminUser" style="font-size:12px; color:var(--muted); font-weight:600;"></span>
-                    <a href="crm.html" class="btn secondary">Open CRM</a>
-                    <button class="btn secondary" onclick="logout()">Logout</button>
-                </div>
-            </div>
+  <div class="topbar">
+    <div class="wrap">
+      <div class="inner">
+        <div class="brand">
+          <h1>IMPACTA ADMIN</h1>
+          <p>Strategic Revenue Console</p>
         </div>
-    </div>
-
-    <main class="wrap" style="padding-top:30px;">
-
-        <section class="card">
-            <div class="hd">
-                <div class="flex col" style="gap:2px;">
-                    <h2>Global Activity History</h2>
-                    <span style="font-size:12px; color:var(--muted);">Real-time monitoring of all agent
-                        interactions.</span>
-                </div>
-                <div><button class="btn" onclick="fetchHistory()">🔄 Refresh Data</button></div>
-            </div>
-            <div class="bd">
-                <div class="filters">
-                    <div class="filter-group" style="flex:1;">
-                        <label>Agent / Caller</label>
-                        <select id="h_caller">
-                            <option value="all">All Agents</option>
-                        </select>
-                    </div>
-                    <div class="filter-group"><label>Year</label><select id="h_year"></select></div>
-                    <div class="filter-group"><label>Month</label><select id="h_month"></select></div>
-                    <div class="filter-group"><label>Day</label><select id="h_day"></select></div>
-                    <div class="filter-group">
-                        <button class="btn secondary" onclick="setToToday()">Reset to Today</button>
-                    </div>
-                </div>
-                <div class="tablewrap" style="max-height:400px; overflow-y:auto;">
-                    <table id="historyTable">
-                        <thead>
-                            <tr>
-                                <th style="width:160px;">Timestamp</th>
-                                <th style="width:150px;">Agent</th>
-                                <th style="width:200px;">Lead / Company</th>
-                                <th style="width:150px;">Action</th>
-                                <th>Notes / Outcome</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyBody">
-                            <tr>
-                                <td colspan="5" class="loading">Loading History...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="hd">
-                <h2>Lead Database</h2>
-                <div class="flex">
-                    <button class="btn secondary" style="background:#f0f9ff; color:#0369a1; border-color:#bae6fd;" onclick="openAIModal()">🤖 AI Batch Verify</button>
-                    
-                    <button class="btn secondary" onclick="exportToCSV()">⬇️ Export CSV</button>
-                    <button class="btn secondary" style="border-color:#fbbf24; color:#b45309;" onclick="findDuplicates()">⚡ Fix Duplicates</button>
-                    <button class="btn secondary" onclick="openImportModal()">Import CSV</button>
-                </div>
-            </div>
-            <div class="bd">
-
-                <div class="filter-bar">
-                    <div class="filter-group">
-                        <label>Status</label>
-                        <select id="f_stage" onchange="applyFilters()">
-                            <option value="">All</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>City</label>
-                        <select id="f_city" onchange="applyFilters()">
-                            <option value="">All</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>State</label>
-                        <select id="f_state" onchange="applyFilters()">
-                            <option value="">All</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Industry</label>
-                        <select id="f_industry" onchange="applyFilters()">
-                            <option value="">All</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Assigned To</label>
-                        <select id="f_assign" onchange="applyFilters()">
-                            <option value="unassigned">Unassigned</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button class="btn secondary" style="width:100%" onclick="resetFilters()">Reset</button>
-                    </div>
-                </div>
-
-                <div
-                    style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:6px; border:1px solid var(--line);">
-                    <span style="font-size:13px; font-weight:600; color:var(--ink);">Bulk Actions:</span>
-                    <select id="assignUser" style="width:200px; padding:8px;">
-                        <option value="">Select Agent...</option>
-                    </select>
-                    <button class="btn" style="padding:8px 16px;" onclick="assignLeads()">Assign</button>
-                    <button class="btn secondary" style="padding:8px 16px;" onclick="bulkUnassign()">Unassign
-                        Selected</button>
-                    <button class="btn danger" style="padding:8px 16px; margin-left:8px;" onclick="bulkDelete()">Delete
-                        Selected</button>
-
-                    <span id="recordCount" style="margin-left:auto; font-size:12px; color:#64748b; font-weight:600;">0
-                        records</span>
-                </div>
-
-                <div class="tablewrap" style="max-height:600px; overflow-y:auto; border:1px solid var(--line);">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAll"
-                                        onclick="toggleAll(this)"></th>
-                                <th onclick="setSort('company')">Company</th>
-                                <th onclick="setSort('phone')">Phone / Verify</th>
-                                <th onclick="setSort('cityClean')">City</th>
-                                <th onclick="setSort('stateExtracted')">State</th>
-                                <th onclick="setSort('industry')">Industry</th>
-                                <th onclick="setSort('assignedName')">Assigned To</th>
-                                <th onclick="setSort('stage')">Stage</th>
-                                <th style="text-align:right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leadList">
-                            <tr>
-                                <td colspan="9" class="loading">Loading Leads...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="hd">
-                <div class="flex col" style="gap:2px;">
-                    <h2>Personnel & Access Control</h2>
-                    <span style="font-size:12px; color:var(--muted);">Manage authorized agents and credentials.</span>
-                </div>
-            </div>
-            <div class="bd">
-                <div class="filters" style="display:grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr; gap:12px;">
-                    <div class="filter-group"><label>Full Name</label><input id="newUserName"
-                            placeholder="e.g. John Doe"></div>
-                    <div class="filter-group"><label>Email</label><input id="newUserEmail" type="email"
-                            placeholder="agent@impacta.com"></div>
-                    <div class="filter-group"><label>Password</label><input id="newUserPass" type="text"
-                            placeholder="Min 6 chars"></div>
-                    <div class="filter-group">
-                        <label>Role</label>
-                        <select id="newUserRole">
-                            <option value="agent">Agent</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div><button class="btn" style="width:100%" onclick="createUser()">+ Create User</button></div>
-                </div>
-                <div class="tablewrap" style="margin-top:20px;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Created</th>
-                                <th>Last Login</th>
-                                <th style="text-align:right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="userList">
-                            <tr>
-                                <td colspan="6" class="loading">Loading Personnel...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <div class="modal" id="editUserModal">
-        <div class="panel">
-            <div class="hd">
-                <h3>Edit Personnel</h3><button class="btn secondary"
-                    onclick="closeModal('editUserModal')">&times;</button>
-            </div>
-            <div class="bd">
-                <input type="hidden" id="editUserId">
-                <div class="filter-group" style="margin-bottom:16px;"><label>Full Name</label><input
-                        id="editUserNameField" style="width:100%"></div>
-                <button class="btn" style="width:100%" onclick="saveUserEdit()">Save Changes</button>
-            </div>
+        <div class="flex">
+          <span id="adminUser" style="font-size:12px; color:var(--muted); font-weight:600;"></span>
+          <a href="crm.html" class="btn secondary">Open CRM</a>
+          <button class="btn secondary" onclick="logout()">Logout</button>
         </div>
+      </div>
     </div>
+  </div>
 
-    <div class="modal" id="importModal">
-        <div class="panel">
-            <div class="hd">
-                <h3>Import Leads (CSV)</h3><button class="btn secondary"
-                    onclick="closeModal('importModal')">&times;</button>
-            </div>
-            <div class="bd">
-                <p style="font-size:13px; color:var(--muted); margin-top:0;">Headers required: Company, Phone, City,
-                    State, Industry, Recommendation, etc.</p>
-                <textarea id="importText" class="import-area" placeholder="Company,Phone,City,State..."></textarea>
-                <button class="btn" style="width:100%; margin-top:12px;" onclick="processImport()">Process
-                    Import</button>
-            </div>
-        </div>
-    </div>
+  <main class="wrap" style="padding-top:30px;">
     
-    <div class="modal" id="aiModal">
-        <div class="panel" style="width:600px;">
-            <div class="hd">
-                <h3>🤖 AI Batch Verification</h3><button class="btn secondary" onclick="closeModal('aiModal')">&times;</button>
+    <section class="card">
+        <div class="hd">
+            <div class="flex col" style="gap:2px;">
+                <h2>Monthly Call Performance</h2>
+                <span style="font-size:12px; color:var(--muted);">Total calls/activities per agent per day.</span>
             </div>
-            <div class="bd">
-                <div class="step">
-                    <h4>Step 1: Get Data</h4>
-                    <p style="font-size:12px; margin:0 0 8px 0;">This copies the next 50 unverified leads to your clipboard.</p>
-                    <button class="btn secondary" style="width:100%" onclick="copyBatchData()">📋 Copy 50 Leads to Clipboard</button>
-                </div>
-                
-                <div class="step">
-                    <h4>Step 2: Ask ChatGPT / Gemini</h4>
-                    <p style="font-size:12px; margin:0 0 8px 0;">Paste this prompt into your AI tool, then paste the copied data:</p>
-                    <div style="background:#fff; padding:8px; border:1px solid var(--line); border-radius:4px; font-family:monospace; font-size:11px; color:var(--brand);">
-                        I will give you a list of companies. Please search for their phone number. Return the result STRICTLY as a JSON array of objects with keys "id" and "phone". No other text. Here is the list:
-                    </div>
-                </div>
-
-                <div class="step">
-                    <h4>Step 3: Paste Results</h4>
-                    <textarea id="aiInput" class="import-area" style="height:100px;" placeholder='[{"id":"...", "phone":"..."}]'></textarea>
-                    <button class="btn" style="width:100%; margin-top:8px;" onclick="processAIResults()">🚀 Update Database</button>
-                </div>
+            <div class="flex">
+                <select id="rep_month" style="width:auto;"></select>
+                <select id="rep_year" style="width:auto;"></select>
+                <button class="btn" onclick="generateReport()">Generate Report</button>
             </div>
         </div>
+        <div class="bd">
+            <div class="tablewrap" style="max-height:500px; overflow:auto;">
+                <table id="reportTable">
+                    <thead><tr id="reportHeadRow"><th>Agent</th><th>Total</th></tr></thead>
+                    <tbody id="reportBody"><tr><td colspan="5" class="loading">Select a date and click Generate.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+      <div class="hd">
+        <div class="flex col" style="gap:2px;">
+          <h2>Global Activity History</h2>
+          <span style="font-size:12px; color:var(--muted);">Real-time monitoring of all agent interactions.</span>
+        </div>
+        <div><button class="btn" onclick="fetchHistory()">🔄 Refresh Data</button></div>
+      </div>
+      <div class="bd">
+        <div class="filters">
+            <div class="filter-group" style="flex:1;">
+                <label>Agent / Caller</label>
+                <select id="h_caller"><option value="all">All Agents</option></select>
+            </div>
+            <div class="filter-group"><label>Year</label><select id="h_year"></select></div>
+            <div class="filter-group"><label>Month</label><select id="h_month"></select></div>
+            <div class="filter-group"><label>Day</label><select id="h_day"></select></div>
+            <div class="filter-group">
+                <button class="btn secondary" onclick="setToToday()">Reset to Today</button>
+            </div>
+        </div>
+        <div class="tablewrap" style="max-height:400px; overflow-y:auto;">
+          <table id="historyTable">
+            <thead>
+              <tr>
+                <th style="width:160px;">Timestamp</th>
+                <th style="width:150px;">Agent</th>
+                <th style="width:200px;">Lead / Company</th>
+                <th style="width:150px;">Action</th>
+                <th>Notes / Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"><tr><td colspan="5" class="loading">Loading History...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="hd">
+        <h2>Lead Database</h2>
+        <div class="flex">
+            <button class="btn secondary" onclick="openImportModal()">Import CSV</button>
+        </div>
+      </div>
+      <div class="bd">
+         
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Status</label>
+                <select id="f_stage" onchange="applyFilters()"><option value="">All</option></select>
+            </div>
+            <div class="filter-group">
+                <label>City</label>
+                <select id="f_city" onchange="applyFilters()"><option value="">All</option></select>
+            </div>
+            <div class="filter-group">
+                <label>State</label>
+                <select id="f_state" onchange="applyFilters()"><option value="">All</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Industry</label>
+                <select id="f_industry" onchange="applyFilters()"><option value="">All</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Assigned To</label>
+                <select id="f_assign" onchange="applyFilters()"><option value="unassigned">Unassigned</option></select>
+            </div>
+            <div>
+                <button class="btn secondary" style="width:100%" onclick="resetFilters()">Reset</button>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:10px; background:#f1f5f9; border-radius:6px; border:1px solid var(--line);">
+            <span style="font-size:13px; font-weight:600; color:var(--ink);">Bulk Actions:</span>
+            <select id="assignUser" style="width:200px; padding:8px;"><option value="">Select Agent...</option></select>
+            <button class="btn" style="padding:8px 16px;" onclick="assignLeads()">Assign</button>
+            <button class="btn secondary" style="padding:8px 16px;" onclick="bulkUnassign()">Unassign Selected</button>
+            <button class="btn danger" style="padding:8px 16px; margin-left:8px;" onclick="bulkDelete()">Delete Selected</button>
+            
+            <span id="recordCount" style="margin-left:auto; font-size:12px; color:#64748b; font-weight:600;">0 records</span>
+        </div>
+
+         <div class="tablewrap" style="max-height:600px; overflow-y:auto; border:1px solid var(--line);">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                        <th onclick="setSort('company')">Company</th>
+                        <th onclick="setSort('cityClean')">City</th>
+                        <th onclick="setSort('stateExtracted')">State</th>
+                        <th onclick="setSort('industry')">Industry</th>
+                        <th onclick="setSort('assignedName')">Assigned To</th>
+                        <th onclick="setSort('stage')">Stage</th>
+                        <th style="text-align:right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leadList">
+                    <tr><td colspan="8" class="loading">Loading Leads...</td></tr>
+                </tbody>
+            </table>
+         </div>
+      </div>
+    </section>
+
+    <section class="card">
+        <div class="hd">
+            <div class="flex col" style="gap:2px;">
+                <h2>Personnel & Access Control</h2>
+                <span style="font-size:12px; color:var(--muted);">Manage authorized agents and credentials.</span>
+            </div>
+        </div>
+        <div class="bd">
+            <div class="filters" style="display:grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr; gap:12px;">
+                <div class="filter-group"><label>Full Name</label><input id="newUserName" placeholder="e.g. John Doe"></div>
+                <div class="filter-group"><label>Email</label><input id="newUserEmail" type="email" placeholder="agent@impacta.com"></div>
+                <div class="filter-group"><label>Password</label><input id="newUserPass" type="text" placeholder="Min 6 chars"></div>
+                <div class="filter-group">
+                    <label>Role</label>
+                    <select id="newUserRole"><option value="agent">Agent</option><option value="admin">Admin</option></select>
+                </div>
+                <div><button class="btn" style="width:100%" onclick="createUser()">+ Create User</button></div>
+            </div>
+            <div class="tablewrap" style="margin-top:20px;">
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th style="text-align:right">Actions</th></tr></thead>
+                    <tbody id="userList"><tr><td colspan="5" class="loading">Loading Personnel...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+  </main>
+
+  <div class="modal" id="editUserModal">
+    <div class="panel">
+      <div class="hd"><h3>Edit Personnel</h3><button class="btn secondary" onclick="closeModal('editUserModal')">&times;</button></div>
+      <div class="bd">
+        <input type="hidden" id="editUserId">
+        <div class="filter-group" style="margin-bottom:16px;"><label>Full Name</label><input id="editUserNameField" style="width:100%"></div>
+        <button class="btn" style="width:100%" onclick="saveUserEdit()">Save Changes</button>
+      </div>
     </div>
+  </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <div class="modal" id="importModal">
+    <div class="panel">
+      <div class="hd"><h3>Import Leads (CSV)</h3><button class="btn secondary" onclick="closeModal('importModal')">&times;</button></div>
+      <div class="bd">
+        <p style="font-size:13px; color:var(--muted); margin-top:0;">Headers required: Company, Phone, City, State, Industry, Recommendation, etc.</p>
+        <textarea id="importText" class="import-area" placeholder="Company,Phone,City,State..."></textarea>
+        <button class="btn" style="width:100%; margin-top:12px;" onclick="processImport()">Process Import</button>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAd6SXuX3nNzoCr07ENc-u_QRU1Not_FAI",
-            authDomain: "impactacrm.firebaseapp.com",
-            projectId: "impactacrm",
-            storageBucket: "impactacrm.firebasestorage.app",
-            messagingSenderId: "323514822260",
-            appId: "1:323514822260:web:9eec9a85f865abb780ab21",
-            measurementId: "G-DW3JFMDG6Y"
-        };
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAd6SXuX3nNzoCr07ENc-u_QRU1Not_FAI",
+    authDomain: "impactacrm.firebaseapp.com",
+    projectId: "impactacrm",
+    storageBucket: "impactacrm.firebasestorage.app",
+    messagingSenderId: "323514822260",
+    appId: "1:323514822260:web:9eec9a85f865abb780ab21",
+    measurementId: "G-DW3JFMDG6Y"
+  };
 
-        let userMap = {};
-        let allLeads = [];
-        let filteredLeads = [];
-        let allUsers = [];
-        let sortKey = 'createdAt';
-        let sortDesc = true;
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-        function init() {
-            auth.onAuthStateChanged(user => {
-                if (!user) return window.location.href = 'index.html';
+  let userMap = {}; 
+  let allLeads = [];
+  let filteredLeads = [];
+  let allUsers = [];
+  let sortKey = 'createdAt'; 
+  let sortDesc = true;
 
-                db.collection('users').doc(user.uid).get().then(doc => {
-                    const role = doc.exists ? doc.data().role : 'agent';
-                    if (role !== 'admin') {
-                        alert("Access Denied: Strategic Oversight Clearance Required.");
-                        window.location.href = 'crm.html';
-                        return;
-                    }
-                    document.getElementById('adminUser').textContent = `Admin: ${user.email}`;
-                    populateDateFilters();
-                    listenToUsers(); // Starts User Listener
-                    fetchHistory(); // Starts History
-                    listenToLeads(); // Starts Lead Listener & Table Render
-                });
-            });
+  function init() {
+    auth.onAuthStateChanged(user => {
+        if(!user) return window.location.href = 'index.html';
+        
+        db.collection('users').doc(user.uid).get().then(doc => {
+            const role = doc.exists ? doc.data().role : 'agent';
+            if(role !== 'admin') {
+                alert("Access Denied: Strategic Oversight Clearance Required.");
+                window.location.href = 'crm.html';
+                return;
+            }
+            document.getElementById('adminUser').textContent = `Admin: ${user.email}`;
+            populateDateFilters();
+            listenToUsers(); 
+            fetchHistory(); 
+            listenToLeads(); 
+        });
+    });
 
-            ['h_year', 'h_month', 'h_day', 'h_caller'].forEach(id => {
-                document.getElementById(id).addEventListener('change', fetchHistory);
-            });
-        }
+    ['h_year', 'h_month', 'h_day', 'h_caller'].forEach(id => {
+        document.getElementById(id).addEventListener('change', fetchHistory);
+    });
+  }
 
-        // --- 1. DATE FILTERS (HISTORY) ---
-        function populateDateFilters() {
-            const today = new Date();
-            const selYear = document.getElementById('h_year');
-            const selMonth = document.getElementById('h_month');
-            const selDay = document.getElementById('h_day');
-            const curYear = today.getFullYear();
+  function populateDateFilters() {
+    const today = new Date();
+    const curYear = today.getFullYear();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-            for (let y = curYear - 2; y <= curYear + 1; y++) selYear.add(new Option(y, y, y === curYear, y === curYear));
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            months.forEach((m, i) => selMonth.add(new Option(m, i, i === today.getMonth(), i === today.getMonth())));
-            for (let d = 1; d <= 31; d++) selDay.add(new Option(d, d, d === today.getDate(), d === today.getDate()));
-        }
+    // Populate Report Filters
+    const repMonth = document.getElementById('rep_month');
+    const repYear = document.getElementById('rep_year');
+    months.forEach((m, i) => repMonth.add(new Option(m, i, i === today.getMonth(), i === today.getMonth())));
+    for(let y = curYear - 1; y <= curYear + 1; y++) repYear.add(new Option(y, y, y === curYear, y === curYear));
 
-        function setToToday() {
-            const today = new Date();
-            document.getElementById('h_year').value = today.getFullYear();
-            document.getElementById('h_month').value = today.getMonth();
-            document.getElementById('h_day').value = today.getDate();
-            document.getElementById('h_caller').value = 'all';
-            fetchHistory();
-        }
+    // Populate History Filters
+    const selYear = document.getElementById('h_year');
+    const selMonth = document.getElementById('h_month');
+    const selDay = document.getElementById('h_day');
 
-        // --- 2. USER MANAGEMENT & DROPDOWNS ---
-        function listenToUsers() {
-            db.collection('users').onSnapshot(snap => {
-                allUsers = [];
-                const sel = document.getElementById('h_caller');
-                const assignSel = document.getElementById('assignUser');
-                const tbody = document.getElementById('userList');
+    for(let y = curYear - 2; y <= curYear + 1; y++) selYear.add(new Option(y, y, y === curYear, y === curYear));
+    months.forEach((m, i) => selMonth.add(new Option(m, i, i === today.getMonth(), i === today.getMonth())));
+    for(let d=1; d<=31; d++) selDay.add(new Option(d, d, d === today.getDate(), d === today.getDate()));
+  }
 
-                sel.innerHTML = '<option value="all">All Agents</option>';
-                assignSel.innerHTML = '<option value="">Select Agent...</option>';
-                tbody.innerHTML = '';
+  function setToToday() {
+      const today = new Date();
+      document.getElementById('h_year').value = today.getFullYear();
+      document.getElementById('h_month').value = today.getMonth();
+      document.getElementById('h_day').value = today.getDate();
+      document.getElementById('h_caller').value = 'all';
+      fetchHistory();
+  }
 
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    d.id = doc.id;
-                    allUsers.push(d);
-                    userMap[doc.id] = d;
+  function listenToUsers() {
+      db.collection('users').onSnapshot(snap => {
+          allUsers = [];
+          const sel = document.getElementById('h_caller');
+          const assignSel = document.getElementById('assignUser');
+          const tbody = document.getElementById('userList');
+          
+          sel.innerHTML = '<option value="all">All Agents</option>';
+          assignSel.innerHTML = '<option value="">Select Agent...</option>';
+          tbody.innerHTML = '';
 
-                    let name = d.name || d.email;
-                    sel.add(new Option(name, doc.id));
+          snap.forEach(doc => {
+              const d = doc.data();
+              d.id = doc.id;
+              allUsers.push(d);
+              userMap[doc.id] = d;
 
-                    if (d.role === 'agent') {
-                        assignSel.add(new Option(name, doc.id));
-                    }
+              let name = d.name || d.email;
+              sel.add(new Option(name, doc.id));
+              
+              if(d.role === 'agent') {
+                  assignSel.add(new Option(name, doc.id));
+              }
 
-                    const created = d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString() : '-';
-
-                    // NEW: Handle Last Login
-                    let lastLogin = '-';
-                    if (d.lastLogin) {
-                        // Firestore Timestamp or standard date check
-                        const ld = d.lastLogin.toDate ? d.lastLogin.toDate() : new Date(d.lastLogin);
-                        lastLogin = ld.toLocaleDateString() + ' ' + ld.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    }
-
-                    const badgeClass = d.role === 'admin' ? 'badge admin' : 'badge';
-
-                    tbody.innerHTML += `
+              const created = d.createdAt ? new Date(d.createdAt.toDate()).toLocaleDateString() : '-';
+              const badgeClass = d.role === 'admin' ? 'badge admin' : 'badge';
+              
+              tbody.innerHTML += `
                 <tr>
                     <td style="font-weight:600">${name}</td>
                     <td>${d.email}</td>
                     <td><span class="${badgeClass}">${d.role}</span></td>
                     <td style="color:var(--muted); font-size:12px;">${created}</td>
-                    <td style="color:var(--brand); font-size:12px; font-weight:600;">${lastLogin}</td>
                     <td style="text-align:right">
                         <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditUser('${doc.id}')">Edit</button>
                         <button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteUser('${doc.id}')">Remove</button>
                     </td>
                 </tr>`;
-                });
+          });
+          
+          if(allLeads.length > 0) populateLeadFilterOptions();
+      });
+  }
 
-                // Re-populate lead filters if leads already loaded
-                if (allLeads.length > 0) populateLeadFilterOptions();
-            });
-        }
+  // --- REPORT LOGIC ---
+  async function generateReport() {
+      const m = parseInt(document.getElementById('rep_month').value);
+      const y = parseInt(document.getElementById('rep_year').value);
+      const headRow = document.getElementById('reportHeadRow');
+      const tbody = document.getElementById('reportBody');
+      
+      tbody.innerHTML = '<tr><td colspan="35" class="loading">Analyzing Call Data...</td></tr>';
 
-        // --- 3. LEAD OPERATIONS (RESTORED LOGIC) ---
-        function listenToLeads() {
-            db.collection('leads').onSnapshot(snap => {
-                allLeads = [];
-                snap.forEach(doc => {
-                    let l = doc.data();
-                    l.id = doc.id;
-                    const agent = allUsers.find(u => u.id === l.assignedTo);
-                    l.assignedName = agent ? (agent.name || agent.email) : 'Unassigned';
+      // 1. Determine days in month
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      
+      // 2. Build Headers
+      let headerHTML = '<th>Agent</th>';
+      for(let d=1; d<=daysInMonth; d++) {
+          headerHTML += `<th class="report-day-header">${d}</th>`;
+      }
+      headerHTML += '<th>Total</th>';
+      headRow.innerHTML = headerHTML;
 
-                    // Extract City/State for Filtering
-                    if (!l.state && l.city && l.city.includes(',')) {
-                        let parts = l.city.split(',');
-                        l.stateExtracted = parts[parts.length - 1].trim();
-                        l.cityClean = parts[0].trim();
-                    } else {
-                        l.stateExtracted = l.state || '';
-                        l.cityClean = l.city || '';
-                    }
-                    allLeads.push(l);
-                });
-                populateLeadFilterOptions();
-                applyFilters();
-            });
-        }
+      // 3. Fetch Data
+      const start = new Date(y, m, 1);
+      const end = new Date(y, m + 1, 0, 23, 59, 59);
+      
+      try {
+          const snap = await db.collectionGroup('activities')
+              .where('createdAt', '>=', start)
+              .where('createdAt', '<=', end)
+              .get();
+          
+          // 4. Initialize Stats Bucket: { userId: { day: count, total: count } }
+          const stats = {};
+          
+          // Pre-fill active agents so they show up even with 0 calls
+          allUsers.forEach(u => {
+             if(u.role !== 'admin') { // Only show agents usually, or check all
+                 stats[u.id] = { name: u.name || u.email, total: 0, days: new Array(daysInMonth + 1).fill(0) };
+             }
+          });
 
-        function populateLeadFilterOptions() {
-            // 1. Capture current selections
-            const s_stage = document.getElementById('f_stage').value;
-            const s_city = document.getElementById('f_city').value;
-            const s_state = document.getElementById('f_state').value;
-            const s_ind = document.getElementById('f_industry').value;
-            const s_assign = document.getElementById('f_assign').value;
+          // 5. Aggregate
+          snap.forEach(doc => {
+              const d = doc.data();
+              const uid = d.createdBy;
+              
+              // If user deleted or not in list, fallback
+              if(!stats[uid]) {
+                   // Try to find name in userMap, else 'Unknown'
+                   const name = userMap[uid] ? (userMap[uid].name || userMap[uid].email) : 'Unknown Agent';
+                   stats[uid] = { name: name, total: 0, days: new Array(daysInMonth + 1).fill(0) };
+              }
 
-            // 2. Helper to get subset excluding specific key
-            const getSubset = (excludeKey) => {
-                return allLeads.filter(l => {
-                    if (excludeKey !== 'stage' && s_stage && l.stage !== s_stage) return false;
-                    if (excludeKey !== 'city' && s_city && l.cityClean !== s_city) return false;
-                    if (excludeKey !== 'state' && s_state && l.stateExtracted !== s_state) return false;
-                    if (excludeKey !== 'industry' && s_ind && (l.industry || 'Unknown') !== s_ind) return false;
-                    if (excludeKey !== 'assign') {
-                        if (s_assign === 'unassigned') { if (l.assignedTo) return false; }
-                        else if (s_assign && l.assignedTo !== s_assign) return false;
-                    }
-                    return true;
-                });
-            };
+              const date = d.createdAt.toDate();
+              const day = date.getDate();
+              
+              stats[uid].days[day]++;
+              stats[uid].total++;
+          });
 
-            // 3. Helper to build dropdowns
-            const build = (key, elId, subset, currentVal, isAssign = false) => {
-                const counts = {};
-                if (isAssign) counts['unassigned'] = 0;
+          // 6. Render Rows
+          let html = '';
+          Object.values(stats).forEach(agent => {
+              html += `<tr><td style="font-weight:600; color:var(--brand-dark); white-space:nowrap;">${agent.name}</td>`;
+              for(let d=1; d<=daysInMonth; d++) {
+                  const count = agent.days[d];
+                  const style = count > 0 ? 'font-weight:700; color:#0f172a;' : 'color:#cbd5e1;';
+                  html += `<td class="report-cell" style="${style}">${count > 0 ? count : '-'}</td>`;
+              }
+              html += `<td class="report-total">${agent.total}</td></tr>`;
+          });
+          
+          if(html === '') html = '<tr><td colspan="35" style="padding:20px; text-align:center;">No activity found for this month.</td></tr>';
+          tbody.innerHTML = html;
 
-                subset.forEach(l => {
-                    if (isAssign) {
-                        if (!l.assignedTo) counts['unassigned']++;
-                        else counts[l.assignedTo] = (counts[l.assignedTo] || 0) + 1;
-                    } else {
-                        const val = l[key] || 'Unknown';
-                        counts[val] = (counts[val] || 0) + 1;
-                    }
-                });
+      } catch(e) {
+          console.error(e);
+          tbody.innerHTML = `<tr><td colspan="35" style="color:red">Error: ${e.message}</td></tr>`;
+      }
+  }
 
-                const el = document.getElementById(elId);
-                let html = '<option value="">All</option>';
+  function listenToLeads() {
+      db.collection('leads').onSnapshot(snap => {
+          allLeads = [];
+          snap.forEach(doc => {
+              let l = doc.data();
+              l.id = doc.id;
+              const agent = allUsers.find(u => u.id === l.assignedTo);
+              l.assignedName = agent ? (agent.name || agent.email) : 'Unassigned';
+              
+              if(!l.state && l.city && l.city.includes(',')) {
+                 let parts = l.city.split(',');
+                 l.stateExtracted = parts[parts.length-1].trim();
+                 l.cityClean = parts[0].trim();
+              } else {
+                 l.stateExtracted = l.state || '';
+                 l.cityClean = l.city || '';
+              }
+              allLeads.push(l);
+          });
+          populateLeadFilterOptions();
+          applyFilters();
+      });
+  }
 
-                if (isAssign) {
-                    html += `<option value="unassigned">Unassigned (${counts['unassigned']})</option>`;
-                    allUsers.filter(u => u.role === 'agent').forEach(u => {
-                        const c = counts[u.id] || 0;
-                        if (c > 0 || u.id === currentVal) {
-                            html += `<option value="${u.id}">${u.name || u.email} (${c})</option>`;
-                        }
-                    });
-                } else {
-                    Object.keys(counts).sort().forEach(k => {
-                        if (k) html += `<option value="${k}">${k} (${counts[k]})</option>`;
-                    });
-                }
-                el.innerHTML = html;
-                el.value = currentVal; // Restore selection
-            };
+  function populateLeadFilterOptions() {
+      const build = (key, elId, isAssign=false) => {
+          const counts = {};
+          if(isAssign) counts['unassigned'] = 0;
+          
+          allLeads.forEach(l => {
+              if(isAssign) {
+                  if(!l.assignedTo) counts['unassigned']++;
+                  else counts[l.assignedTo] = (counts[l.assignedTo] || 0) + 1;
+              } else {
+                  const val = l[key] || 'Unknown';
+                  counts[val] = (counts[val] || 0) + 1;
+              }
+          });
 
-            // 4. Rebuild all dropdowns using their specific context subsets
-            build('stage', 'f_stage', getSubset('stage'), s_stage);
-            build('cityClean', 'f_city', getSubset('city'), s_city);
-            build('stateExtracted', 'f_state', getSubset('state'), s_state);
-            build('industry', 'f_industry', getSubset('industry'), s_ind);
-            build('assignedTo', 'f_assign', getSubset('assign'), s_assign, true);
-        }
+          const el = document.getElementById(elId);
+          const current = el.value;
+          let html = '<option value="">All</option>';
+          
+          if(isAssign) {
+              html += `<option value="unassigned">Unassigned (${counts['unassigned']})</option>`;
+              allUsers.filter(u => u.role === 'agent').forEach(u => {
+                  html += `<option value="${u.id}">${u.name || u.email} (${counts[u.id] || 0})</option>`;
+              });
+          } else {
+              Object.keys(counts).sort().forEach(k => {
+                  if(k) html += `<option value="${k}">${k} (${counts[k]})</option>`;
+              });
+          }
+          el.innerHTML = html;
+          el.value = current || (isAssign && current === '' ? 'unassigned' : '');
+          if(isAssign && current === 'unassigned') el.value = 'unassigned';
+      };
 
-        function applyFilters() {
-            const s_stage = document.getElementById('f_stage').value;
-            const s_city = document.getElementById('f_city').value;
-            const s_state = document.getElementById('f_state').value;
-            const s_ind = document.getElementById('f_industry').value;
-            const s_assign = document.getElementById('f_assign').value;
+      build('stage', 'f_stage');
+      build('cityClean', 'f_city');
+      build('stateExtracted', 'f_state');
+      build('industry', 'f_industry');
+      build('assignedTo', 'f_assign', true);
+  }
 
-            filteredLeads = allLeads.filter(l => {
-                if (s_stage && l.stage !== s_stage) return false;
-                if (s_city && l.cityClean !== s_city) return false;
-                if (s_state && l.stateExtracted !== s_state) return false;
-                if (s_ind && (l.industry || 'Unknown') !== s_ind) return false;
-                if (s_assign === 'unassigned') { if (l.assignedTo) return false; }
-                else if (s_assign && l.assignedTo !== s_assign) return false;
-                return true;
-            });
+  function applyFilters() {
+      const s_stage = document.getElementById('f_stage').value;
+      const s_city = document.getElementById('f_city').value;
+      const s_state = document.getElementById('f_state').value;
+      const s_ind = document.getElementById('f_industry').value;
+      const s_assign = document.getElementById('f_assign').value;
 
-            renderTable();
-            populateLeadFilterOptions(); // REFRESH COUNTS
-        }
+      filteredLeads = allLeads.filter(l => {
+          if(s_stage && l.stage !== s_stage) return false;
+          if(s_city && l.cityClean !== s_city) return false;
+          if(s_state && l.stateExtracted !== s_state) return false;
+          if(s_ind && (l.industry || 'Unknown') !== s_ind) return false;
+          if(s_assign === 'unassigned') { if(l.assignedTo) return false; }
+          else if(s_assign && l.assignedTo !== s_assign) return false;
+          return true;
+      });
 
-        function resetFilters() {
-            document.getElementById('f_stage').value = '';
-            document.getElementById('f_city').value = '';
-            document.getElementById('f_state').value = '';
-            document.getElementById('f_industry').value = '';
-            document.getElementById('f_assign').value = 'unassigned';
-            applyFilters();
-        }
+      renderTable();
+  }
 
-        window.setSort = (key) => {
-            if (sortKey === key) sortDesc = !sortDesc;
-            else { sortKey = key; sortDesc = true; }
-            renderTable();
-        };
+  function resetFilters() {
+      document.getElementById('f_stage').value = '';
+      document.getElementById('f_city').value = '';
+      document.getElementById('f_state').value = '';
+      document.getElementById('f_industry').value = '';
+      document.getElementById('f_assign').value = 'unassigned';
+      applyFilters();
+  }
 
-        function renderTable() {
-            const tbody = document.getElementById('leadList');
-            tbody.innerHTML = '';
-            document.getElementById('recordCount').textContent = `${filteredLeads.length} records`;
-            document.getElementById('selectAll').checked = false;
+  window.setSort = (key) => { 
+      if(sortKey === key) sortDesc = !sortDesc; 
+      else { sortKey = key; sortDesc = true; }
+      renderTable(); 
+  };
 
-            // Sort
-            filteredLeads.sort((a, b) => {
-                let va = a[sortKey] || ''; let vb = b[sortKey] || '';
-                if (typeof va === 'string') va = va.toLowerCase();
-                if (typeof vb === 'string') vb = vb.toLowerCase();
-                if (sortDesc) return va < vb ? 1 : -1;
-                return va < vb ? -1 : 1;
-            });
+  function renderTable() {
+      const tbody = document.getElementById('leadList');
+      tbody.innerHTML = '';
+      document.getElementById('recordCount').textContent = `${filteredLeads.length} records`;
+      document.getElementById('selectAll').checked = false;
 
-            // Render (Top 100 max for perf)
-            filteredLeads.slice(0, 100).forEach(l => {
-                let actions = '';
-                if (l.assignedTo) actions += `<button class="btn secondary" style="padding:4px 8px; font-size:11px; margin-right:6px;" onclick="unassignSingle('${l.id}')">Unassign</button>`;
-                actions += `<button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteSingle('${l.id}')">🗑</button>`;
-                const assignDisplay = l.assignedTo ? l.assignedName : '<span style="color:#b91c1c; font-weight:700;">Unassigned</span>';
+      filteredLeads.sort((a,b) => {
+          let va = a[sortKey] || ''; let vb = b[sortKey] || '';
+          if (typeof va === 'string') va = va.toLowerCase();
+          if (typeof vb === 'string') vb = vb.toLowerCase();
+          if(sortDesc) return va < vb ? 1 : -1;
+          return va < vb ? -1 : 1;
+      });
 
-                // VERIFICATION UI LOGIC
-                let verifyUI = '';
-                if (l.phoneVerified) {
-                    verifyUI = `<span class="verified-badge" title="Verified">✅</span>`;
-                } else {
-                    verifyUI = `
-                    <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
-                        <button id="verify-btn-${l.id}" class="verify-btn" onclick="triggerPhoneVerify('${l.id}', '${l.company}', '${l.cityClean}')" title="Audit Phone Online">🔍</button>
-                        <div id="verify-actions-${l.id}" class="verify-actions">
-                            <button class="verify-btn" style="color:green" onclick="confirmPhone('${l.id}')" title="Match">✅</button>
-                            <button class="verify-btn" style="color:#b45309" onclick="updatePhone('${l.id}')" title="Fix">✏️</button>
-                        </div>
-                    </div>`;
-                }
-                const phoneStyle = l.phoneVerified ? 'color:green; font-weight:700;' : 'color:var(--muted);';
+      filteredLeads.slice(0, 100).forEach(l => {
+          let actions = '';
+          if(l.assignedTo) actions += `<button class="btn secondary" style="padding:4px 8px; font-size:11px; margin-right:6px;" onclick="unassignSingle('${l.id}')">Unassign</button>`;
+          actions += `<button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteSingle('${l.id}')">🗑</button>`;
+          const assignDisplay = l.assignedTo ? l.assignedName : '<span style="color:#b91c1c; font-weight:700;">Unassigned</span>';
 
-                tbody.innerHTML += `
+          tbody.innerHTML += `
             <tr>
                 <td style="text-align:center;"><input type="checkbox" class="lead-check" value="${l.id}"></td>
                 <td style="font-weight:600">${l.company || 'Unknown'}</td>
-                
-                <td style="min-width:180px;">
-                    <div style="display:flex; align-items:center;">
-                        <span style="${phoneStyle}">${l.phone || '-'}</span>
-                        ${l.phone ? verifyUI : ''}
-                    </div>
-                </td>
-                
                 <td>${l.cityClean}</td>
                 <td>${l.stateExtracted}</td>
                 <td>${l.industry || '-'}</td>
@@ -941,378 +615,180 @@
                 <td><span class="badge">${l.stage}</span></td>
                 <td style="text-align:right">${actions}</td>
             </tr>`;
-            });
-        }
+      });
+  }
 
-        // NEW: PHONE VERIFICATION LOGIC
-        function triggerPhoneVerify(id, company, city) {
-            // 1. Open Google Search
-            // We use encodeURIComponent to ensure special chars don't break the URL
-            const query = encodeURIComponent(`${company} ${city} phone number`);
-            window.open(`https://www.google.com/search?q=${query}`, '_blank');
-            
-            // 2. Show the "Match / Fix" buttons
-            document.getElementById(`verify-actions-${id}`).style.display = 'inline-flex';
-            document.getElementById(`verify-btn-${id}`).style.display = 'none';
-        }
+  function toggleAll(src) { document.querySelectorAll('.lead-check').forEach(cb => cb.checked = src.checked); }
+  function getChecked() { return Array.from(document.querySelectorAll('.lead-check:checked')).map(cb => cb.value); }
 
-        function confirmPhone(id) {
-            // Optimistic UI Update (optional, but waiting for DB is safer)
-            db.collection('leads').doc(id).update({ 
-                phoneVerified: true, 
-                lastVerifiedAt: new Date() 
-            }).then(() => {
-                // The onSnapshot listener will auto-update the UI
-            });
-        }
+  function assignLeads() {
+      const uid = document.getElementById('assignUser').value;
+      const ids = getChecked();
+      if(!uid) return alert('Select Agent');
+      if(ids.length===0) return alert('No leads selected');
+      
+      const batch = db.batch();
+      ids.forEach(id => batch.update(db.collection('leads').doc(id), { assignedTo: uid }));
+      batch.commit().then(() => alert('Assigned!'));
+  }
 
-        function updatePhone(id) {
-            const newPhone = prompt("Enter the CORRECT phone number found online:");
-            if(newPhone && newPhone.trim().length > 0) {
-                db.collection('leads').doc(id).update({ 
-                    phone: newPhone.trim(),
-                    phoneVerified: true, 
-                    lastVerifiedAt: new Date() 
-                });
-            }
-        }
+  function bulkUnassign() {
+      const ids = getChecked();
+      if(ids.length===0) return alert('No leads selected');
+      if(!confirm(`Unassign ${ids.length} leads?`)) return;
+      
+      const batch = db.batch();
+      ids.forEach(id => batch.update(db.collection('leads').doc(id), { assignedTo: null }));
+      batch.commit().then(() => alert('Unassigned!'));
+  }
+  
+  function bulkDelete() {
+      const ids = getChecked();
+      if(ids.length===0) return alert('No leads selected');
+      if(!confirm(`DELETE ${ids.length} leads? This cannot be undone.`)) return;
+      const batch = db.batch();
+      ids.forEach(id => batch.delete(db.collection('leads').doc(id)));
+      batch.commit().then(() => alert('Deleted!'));
+  }
 
-        // --- NEW: AI BATCH VERIFICATION ---
-        function openAIModal() { document.getElementById('aiModal').classList.add('open'); }
-        
-        function copyBatchData() {
-            // 1. Find unverified leads (max 50)
-            const unverified = allLeads.filter(l => !l.phoneVerified).slice(0, 50);
-            
-            if (unverified.length === 0) return alert("All leads are already verified!");
+  function unassignSingle(id) { db.collection('leads').doc(id).update({ assignedTo: null }); }
+  function deleteSingle(id) { if(confirm('Delete?')) db.collection('leads').doc(id).delete(); }
 
-            // 2. Format as JSON for the AI
-            const payload = unverified.map(l => ({
-                id: l.id,
-                company: l.company,
-                city: l.cityClean,
-                state: l.stateExtracted
-            }));
+  function createUser() {
+    const name = document.getElementById('newUserName').value; 
+    const email = document.getElementById('newUserEmail').value;
+    const password = document.getElementById('newUserPass').value;
+    const role = document.getElementById('newUserRole').value;
+    if (!email || !password || !name) return alert('Fill all fields');
+    
+    const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+    secondaryApp.auth().createUserWithEmailAndPassword(email, password)
+        .then((cred) => {
+            db.collection('users').doc(cred.user.uid).set({ name, email, role, createdAt: new Date() })
+            .then(() => { alert('User created!'); secondaryApp.delete(); });
+        }).catch(e => { alert(e.message); secondaryApp.delete(); });
+  }
 
-            // 3. Copy to Clipboard
-            navigator.clipboard.writeText(JSON.stringify(payload)).then(() => {
-                alert(`✅ Copied ${unverified.length} leads to clipboard.\n\nNow go to Step 2 and paste this into ChatGPT/Gemini.`);
-            });
-        }
+  function deleteUser(id) { if(confirm('Remove user?')) db.collection('users').doc(id).delete(); }
+  function openEditUser(id) {
+      const u = allUsers.find(x => x.id === id);
+      document.getElementById('editUserId').value = id;
+      document.getElementById('editUserNameField').value = u.name || '';
+      document.getElementById('editUserModal').classList.add('open');
+  }
+  function saveUserEdit() {
+      const id = document.getElementById('editUserId').value;
+      const name = document.getElementById('editUserNameField').value;
+      db.collection('users').doc(id).update({ name }).then(() => closeModal('editUserModal'));
+  }
 
-        function processAIResults() {
-            const input = document.getElementById('aiInput').value;
-            if (!input.trim()) return alert("Paste the JSON from the AI first.");
+  async function fetchHistory() {
+      const tbody = document.getElementById('historyBody');
+      const callerSelect = document.getElementById('h_caller');
+      
+      tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading History...</td></tr>';
+      
+      const year = parseInt(document.getElementById('h_year').value);
+      const month = parseInt(document.getElementById('h_month').value);
+      const day = parseInt(document.getElementById('h_day').value);
+      
+      const start = new Date(year, month, day);
+      const end = new Date(year, month, day, 23, 59, 59);
 
-            try {
-                const results = JSON.parse(input);
-                if (!Array.isArray(results)) throw new Error("Format must be an array [...]");
-                
-                const batch = db.batch();
-                let count = 0;
+      let query = db.collectionGroup('activities')
+                    .where('createdAt', '>=', start)
+                    .where('createdAt', '<=', end);
 
-                results.forEach(res => {
-                    if (res.id && res.phone) {
-                        const ref = db.collection('leads').doc(res.id);
-                        batch.update(ref, {
-                            phone: res.phone,
-                            phoneVerified: true,
-                            lastVerifiedAt: new Date()
-                        });
-                        count++;
-                    }
-                });
+      try {
+          const snap = await query.get();
+          const allLogs = [];
+          const counts = {};
 
-                batch.commit().then(() => {
-                    alert(`✅ Updated ${count} records successfully!`);
-                    document.getElementById('aiInput').value = '';
-                    closeModal('aiModal');
-                }).catch(e => alert("Database Error: " + e.message));
+          snap.forEach(doc => { 
+              let d = doc.data(); 
+              d._leadId = doc.ref.parent.parent.id; 
+              allLogs.push(d); 
 
-            } catch (e) {
-                alert("❌ JSON Error: Make sure you pasted ONLY the JSON array provided by the AI.\n\n" + e.message);
-            }
-        }
+              const uid = d.createdBy;
+              counts[uid] = (counts[uid] || 0) + 1;
+          });
 
-        // --- 5. DATA UTILITIES (Export & Dedupe) ---
-        
-        // EXPORT CSV
-        function exportToCSV() {
-            if (allLeads.length === 0) return alert("No leads to export.");
-            
-            // 1. Collect all unique headers from all objects
-            const headers = new Set();
-            allLeads.forEach(l => Object.keys(l).forEach(k => headers.add(k)));
-            const headerArr = Array.from(headers);
-            
-            // 2. Build CSV Content
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += headerArr.join(",") + "\r\n"; // Header Row
-            
-            allLeads.forEach(l => {
-                const row = headerArr.map(h => {
-                    let val = l[h] === null || l[h] === undefined ? "" : l[h];
-                    // Handle timestamps if present
-                    if(val && typeof val === 'object' && val.seconds) {
-                        val = new Date(val.toDate()).toISOString();
-                    }
-                    // Escape quotes and commas
-                    val = String(val).replace(/"/g, '""'); 
-                    if (val.search(/("|,|\n)/g) >= 0) val = `"${val}"`;
-                    return val;
-                });
-                csvContent += row.join(",") + "\r\n";
-            });
-            
-            // 3. Trigger Download
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `impacta_leads_export_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+          Array.from(callerSelect.options).forEach(opt => {
+              if (opt.value === 'all') {
+                  opt.text = `All Agents (${allLogs.length})`;
+                  return;
+              }
+              let baseName = opt.text;
+              if (userMap[opt.value]) {
+                  baseName = userMap[opt.value].name || userMap[opt.value].email;
+              } else if (opt.text.includes('(')) {
+                  baseName = opt.text.split(' (')[0];
+              }
 
-        // DEDUPLICATION TOOL
-        async function findDuplicates() {
-            if (allLeads.length === 0) return;
-            const map = new Map();
-            const toDelete = [];
+              const count = counts[opt.value] || 0;
+              opt.text = `${baseName} (${count})`;
+          });
 
-            // 1. Group by Normalized Company Name
-            allLeads.forEach(l => {
-                if (!l.company) return;
-                const key = l.company.trim().toLowerCase(); // "Impacta Cloud" == "impacta cloud"
-                if (!map.has(key)) map.set(key, []);
-                map.get(key).push(l);
-            });
+          const selectedCaller = callerSelect.value;
+          let displayLogs = allLogs;
 
-            // 2. Identify Groups > 1
-            map.forEach((leads, key) => {
-                if (leads.length > 1) {
-                    // Sort by Created Date (Oldest First)
-                    // We keep the oldest [0] because it likely has the history logs attached
-                    leads.sort((a, b) => {
-                        const getT = (obj) => obj.createdAt ? (obj.createdAt.seconds || new Date(obj.createdAt).getTime()/1000) : 0;
-                        return getT(a) - getT(b);
-                    });
+          if (selectedCaller !== 'all') {
+              displayLogs = allLogs.filter(log => log.createdBy === selectedCaller);
+          }
 
-                    // Mark indices 1...n for deletion
-                    for (let i = 1; i < leads.length; i++) {
-                        toDelete.push(leads[i]);
-                    }
-                }
-            });
-
-            if (toDelete.length === 0) return alert("Great news! No duplicates found (based on Company Name).");
-
-            // 3. Confirm & Execute
-            const msg = `⚠️ Found ${toDelete.length} duplicates across ${map.size} companies.\n\n` + 
-                        `This tool will KEEP the oldest record (to preserve history) and DELETE the newer duplicates.\n\n` +
-                        `Example: Deleting ${toDelete[0].company} (Created: ${toDelete[0].createdAt ? new Date(toDelete[0].createdAt.seconds * 1000).toLocaleDateString() : '?'})\n\n` + 
-                        `Are you sure you want to proceed?`;
-
-            if (confirm(msg)) {
-                const batch = db.batch();
-                toDelete.forEach(l => {
-                    batch.delete(db.collection('leads').doc(l.id));
-                });
-                
-                try {
-                    await batch.commit();
-                    alert(`✅ Success! ${toDelete.length} duplicates removed.`);
-                } catch(e) {
-                    alert("Error removing duplicates: " + e.message);
-                }
-            }
-        }
-
-        // BULK ACTIONS
-        function toggleAll(src) { document.querySelectorAll('.lead-check').forEach(cb => cb.checked = src.checked); }
-        function getChecked() { return Array.from(document.querySelectorAll('.lead-check:checked')).map(cb => cb.value); }
-
-        function assignLeads() {
-            const uid = document.getElementById('assignUser').value;
-            const ids = getChecked();
-            if (!uid) return alert('Select Agent');
-            if (ids.length === 0) return alert('No leads selected');
-
-            const batch = db.batch();
-            ids.forEach(id => batch.update(db.collection('leads').doc(id), { assignedTo: uid }));
-            batch.commit().then(() => alert('Assigned!'));
-        }
-
-        function bulkUnassign() {
-            const ids = getChecked();
-            if (ids.length === 0) return alert('No leads selected');
-            if (!confirm(`Unassign ${ids.length} leads?`)) return;
-
-            const batch = db.batch();
-            ids.forEach(id => batch.update(db.collection('leads').doc(id), { assignedTo: null }));
-            batch.commit().then(() => alert('Unassigned!'));
-        }
-
-        function bulkDelete() {
-            const ids = getChecked();
-            if (ids.length === 0) return alert('No leads selected');
-            if (!confirm(`DELETE ${ids.length} leads? This cannot be undone.`)) return;
-            const batch = db.batch();
-            ids.forEach(id => batch.delete(db.collection('leads').doc(id)));
-            batch.commit().then(() => alert('Deleted!'));
-        }
-
-        function unassignSingle(id) { db.collection('leads').doc(id).update({ assignedTo: null }); }
-        function deleteSingle(id) { if (confirm('Delete?')) db.collection('leads').doc(id).delete(); }
-
-        // --- 4. HISTORY & USERS (Standard) ---
-        function createUser() {
-            const name = document.getElementById('newUserName').value;
-            const email = document.getElementById('newUserEmail').value;
-            const password = document.getElementById('newUserPass').value;
-            const role = document.getElementById('newUserRole').value;
-            if (!email || !password || !name) return alert('Fill all fields');
-
-            const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
-            secondaryApp.auth().createUserWithEmailAndPassword(email, password)
-                .then((cred) => {
-                    db.collection('users').doc(cred.user.uid).set({ name, email, role, createdAt: new Date() })
-                        .then(() => { alert('User created!'); secondaryApp.delete(); });
-                }).catch(e => { alert(e.message); secondaryApp.delete(); });
-        }
-
-        function deleteUser(id) { if (confirm('Remove user?')) db.collection('users').doc(id).delete(); }
-        function openEditUser(id) {
-            const u = allUsers.find(x => x.id === id);
-            document.getElementById('editUserId').value = id;
-            document.getElementById('editUserNameField').value = u.name || '';
-            document.getElementById('editUserModal').classList.add('open');
-        }
-        function saveUserEdit() {
-            const id = document.getElementById('editUserId').value;
-            const name = document.getElementById('editUserNameField').value;
-            db.collection('users').doc(id).update({ name }).then(() => closeModal('editUserModal'));
-        }
-
-        async function fetchHistory() {
-            const tbody = document.getElementById('historyBody');
-            const callerSelect = document.getElementById('h_caller');
-
-            tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading History...</td></tr>';
-
-            // 1. Get Date Range
-            const year = parseInt(document.getElementById('h_year').value);
-            const month = parseInt(document.getElementById('h_month').value);
-            const day = parseInt(document.getElementById('h_day').value);
-
-            const start = new Date(year, month, day);
-            const end = new Date(year, month, day, 23, 59, 59);
-
-            // 2. Query ALL activities for this timeframe
-            let query = db.collectionGroup('activities')
-                .where('createdAt', '>=', start)
-                .where('createdAt', '<=', end);
-
-            try {
-                const snap = await query.get();
-                const allLogs = [];
-                const counts = {};
-
-                // 3. Process Data & Calculate Counts
-                snap.forEach(doc => {
-                    let d = doc.data();
-                    d._leadId = doc.ref.parent.parent.id;
-                    allLogs.push(d);
-
-                    // Tally count for this agent
-                    const uid = d.createdBy;
-                    counts[uid] = (counts[uid] || 0) + 1;
-                });
-
-                // 4. Update Dropdown Labels with Counts
-                Array.from(callerSelect.options).forEach(opt => {
-                    if (opt.value === 'all') {
-                        opt.text = `All Agents (${allLogs.length})`;
-                        return;
-                    }
-
-                    let baseName = opt.text;
-                    if (userMap[opt.value]) {
-                        baseName = userMap[opt.value].name || userMap[opt.value].email;
-                    } else if (opt.text.includes('(')) {
-                        baseName = opt.text.split(' (')[0];
-                    }
-
-                    const count = counts[opt.value] || 0;
-                    opt.text = `${baseName} (${count})`;
-                });
-
-                // 5. Filter for Table Display based on current selection
-                const selectedCaller = callerSelect.value;
-                let displayLogs = allLogs;
-
-                if (selectedCaller !== 'all') {
-                    displayLogs = allLogs.filter(log => log.createdBy === selectedCaller);
-                }
-
-                // Sort Descending
-                displayLogs.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
-
-                if (displayLogs.length === 0) {
-                    return tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center">No activity found for this selection.</td></tr>';
-                }
-
-                // 6. Render Table
-                tbody.innerHTML = displayLogs.map(log => {
-                    const d = log.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const agent = userMap[log.createdBy] ? (userMap[log.createdBy].name || 'Unknown') : 'Unknown';
-                    const l = allLeads.find(x => x.id === log._leadId);
-                    const lName = l ? l.company : 'ID: ' + log._leadId.substr(0, 5);
-                    return `<tr>
+          displayLogs.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate());
+          
+          if(displayLogs.length === 0) {
+              return tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center">No activity found for this selection.</td></tr>';
+          }
+          
+          tbody.innerHTML = displayLogs.map(log => {
+              const d = log.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+              const agent = userMap[log.createdBy] ? (userMap[log.createdBy].name || 'Unknown') : 'Unknown';
+              const l = allLeads.find(x => x.id === log._leadId);
+              const lName = l ? l.company : 'ID: ' + log._leadId.substr(0,5);
+              return `<tr>
                   <td style="font-family:monospace; color:var(--muted)">${d}</td>
                   <td style="font-weight:600">${agent}</td>
                   <td style="color:var(--brand)">${lName}</td>
                   <td><span class="status-pill" style="background:#f1f5f9; color:var(--ink)">${log.action}</span></td>
-                  <td style="color:var(--muted)">${log.text || ''}</td>
+                  <td style="color:var(--muted)">${log.text||''}</td>
               </tr>`;
-                }).join('');
+          }).join('');
 
-            } catch (e) {
-                console.error(e);
-                tbody.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`;
-            }
-        }
+      } catch(e) { 
+          console.error(e); 
+          tbody.innerHTML = `<tr><td colspan="5" style="color:red">Error: ${e.message}</td></tr>`; 
+      }
+  }
 
-        // IMPORT
-        function openImportModal() { document.getElementById('importModal').classList.add('open'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-        function processImport() {
-            const txt = document.getElementById('importText').value;
-            if (!txt.trim()) return alert('Paste CSV');
-            const lines = txt.trim().split(/\r?\n/);
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+  function openImportModal() { document.getElementById('importModal').classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function processImport() {
+      const txt = document.getElementById('importText').value;
+      if(!txt.trim()) return alert('Paste CSV');
+      const lines = txt.trim().split(/\r?\n/);
+      const headers = lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/"/g,''));
+      
+      const batch = db.batch();
+      let count = 0;
+      for(let i=1; i<lines.length; i++) {
+          const row = lines[i].split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+          if(row.length < 2) continue;
+          const get = (k) => { const idx = headers.findIndex(h=>h.includes(k)); return idx>-1?row[idx]:''; };
+          
+          const ref = db.collection('leads').doc();
+          batch.set(ref, {
+              company: get('company')||'Unknown', phone: get('phone'), city: get('city'), industry: get('industry'),
+              stage: 'New Lead', nextAction: 'Call Attempt', assignedTo: null, createdAt: new Date()
+          });
+          count++;
+      }
+      batch.commit().then(() => { alert(`Imported ${count}`); closeModal('importModal'); });
+  }
 
-            const batch = db.batch();
-            let count = 0;
-            for (let i = 1; i < lines.length; i++) {
-                // Basic CSV parse (comma split) - handling simple CSVs
-                const row = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-                if (row.length < 2) continue;
-                const get = (k) => { const idx = headers.findIndex(h => h.includes(k)); return idx > -1 ? row[idx] : ''; };
-
-                const ref = db.collection('leads').doc();
-                batch.set(ref, {
-                    company: get('company') || 'Unknown', phone: get('phone'), city: get('city'), industry: get('industry'),
-                    stage: 'New Lead', nextAction: 'Call Attempt', assignedTo: null, createdAt: new Date()
-                });
-                count++;
-            }
-            batch.commit().then(() => { alert(`Imported ${count}`); closeModal('importModal'); });
-        }
-
-        function logout() { auth.signOut().then(() => window.location.href = 'index.html'); }
-        init();
-    </script>
+  function logout() { auth.signOut().then(() => window.location.href = 'index.html'); }
+  init();
+</script>
 </body>
-
 </html>
