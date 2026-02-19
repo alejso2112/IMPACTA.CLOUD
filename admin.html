@@ -163,12 +163,13 @@
     </section>
 
     <section class="card">
-      <div class="hd">
+        <div class="hd">
         <h2>Lead Database</h2>
         <div class="flex">
+            <button class="btn secondary" onclick="exportAllData()">⬇ Export Leads & History</button>
             <button class="btn secondary" onclick="openImportModal()">Import CSV</button>
         </div>
-      </div>
+        </div>
       <div class="bd">
          
         <div class="filter-bar">
@@ -852,6 +853,96 @@ function sendPasswordReset(email) {
             console.error("Error sending reset email:", error);
             alert(`Error: ${error.message}`);
         });
+}
+
+// --- EXPORT FEATURE: Leads + History ---
+async function exportAllData() {
+    if (allLeads.length === 0) return alert("No leads data loaded yet. Please wait.");
+    
+    const btn = document.querySelector('button[onclick="exportAllData()"]');
+    const originalText = btn.innerText;
+    btn.innerText = "⏳ Generating CSVs...";
+    btn.disabled = true;
+
+    try {
+        // 1. GENERATE LEADS CSV
+        const leadHeaders = ["Lead ID", "Company", "City", "State", "Industry", "Phone", "Email", "Stage", "Next Action", "Assigned Agent", "Initial Notes", "Created At"];
+        let leadsCsv = leadHeaders.join(",") + "\n";
+
+        allLeads.forEach(l => {
+            const dateStr = l.createdAt && l.createdAt.toDate ? l.createdAt.toDate().toISOString() : "";
+            // Escape quotes and commas for safe CSV formatting
+            const cleanNote = (l.notes || "").replace(/"/g, '""').replace(/\n/g, ' '); 
+            
+            const row = [
+                l.id,
+                `"${l.company || ''}"`,
+                `"${l.cityClean || ''}"`,
+                `"${l.stateExtracted || ''}"`,
+                `"${l.industry || ''}"`,
+                `"${l.phone || ''}"`,
+                `"${l.email || ''}"`,
+                `"${l.stage || ''}"`,
+                `"${l.nextAction || ''}"`,
+                `"${l.assignedName || 'Unassigned'}"`,
+                `"${cleanNote}"`,
+                `"${dateStr}"`
+            ];
+            leadsCsv += row.join(",") + "\n";
+        });
+
+        // 2. GENERATE HISTORY/NOTES CSV (Querying the Collection Group)
+        const historyHeaders = ["Lead ID", "Company Name", "Agent", "Action", "Call Notes/Outcome", "Timestamp"];
+        let historyCsv = historyHeaders.join(",") + "\n";
+
+        // Fetch all activities globally
+        const snap = await db.collectionGroup('activities').get();
+        snap.forEach(doc => {
+            const d = doc.data();
+            const parentLeadId = doc.ref.parent.parent.id;
+            const parentLead = allLeads.find(x => x.id === parentLeadId);
+            const compName = parentLead ? parentLead.company : "Unknown";
+            const agentName = userMap[d.createdBy] ? userMap[d.createdBy].name || userMap[d.createdBy].email : "Unknown";
+            const timeStr = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : "";
+            
+            const cleanText = (d.text || "").replace(/"/g, '""').replace(/\n/g, ' ');
+            const cleanDetails = (d.details || "").replace(/"/g, '""').replace(/\n/g, ' ');
+
+            const row = [
+                parentLeadId,
+                `"${compName}"`,
+                `"${agentName}"`,
+                `"${d.action || ''}"`,
+                `"${cleanText} ${cleanDetails}"`,
+                `"${timeStr}"`
+            ];
+            historyCsv += row.join(",") + "\n";
+        });
+
+        // 3. TRIGGER DOWNLOADS
+        downloadCSV(leadsCsv, `IMPACTA_Leads_Export_${new Date().toISOString().split('T')[0]}.csv`);
+        downloadCSV(historyCsv, `IMPACTA_History_Export_${new Date().toISOString().split('T')[0]}.csv`);
+
+    } catch (error) {
+        console.error("Export failed:", error);
+        alert("Export failed. Check console for details.");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Helper function to trigger browser download
+function downloadCSV(csvContent, filename) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 </script>
 </body>
