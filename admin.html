@@ -258,16 +258,25 @@
 
   </main>
 
-  <div class="modal" id="editUserModal">
-    <div class="panel">
-      <div class="hd"><h3>Edit Personnel</h3><button class="btn secondary" onclick="closeModal('editUserModal')">&times;</button></div>
-      <div class="bd">
-        <input type="hidden" id="editUserId">
-        <div class="filter-group" style="margin-bottom:16px;"><label>Full Name</label><input id="editUserNameField" style="width:100%"></div>
-        <button class="btn" style="width:100%" onclick="saveUserEdit()">Save Changes</button>
-      </div>
+    <div class="modal" id="editUserModal">
+        <div class="panel">
+        <div class="hd"><h3>Edit Personnel</h3><button class="btn secondary" onclick="closeModal('editUserModal')">&times;</button></div>
+        <div class="bd">
+            <input type="hidden" id="editUserId">
+            <input type="hidden" id="editUserOldEmail"> <div class="filter-group" style="margin-bottom:12px;">
+                <label>Full Name</label>
+                <input id="editUserNameField" style="width:100%" placeholder="Agent Name">
+            </div>
+            
+            <div class="filter-group" style="margin-bottom:16px;">
+                <label>Sign-In Email</label>
+                <input id="editUserEmailField" type="email" style="width:100%" placeholder="agent@impacta.cloud">
+            </div>
+            
+            <button class="btn" style="width:100%" onclick="saveUserEdit()">Save Changes</button>
+        </div>
+        </div>
     </div>
-  </div>
 
   <div class="modal" id="importModal">
     <div class="panel">
@@ -671,18 +680,58 @@
   }
 
   function deleteUser(id) { if(confirm('Remove user?')) db.collection('users').doc(id).delete(); }
-  function openEditUser(id) {
+function openEditUser(id) {
       const u = allUsers.find(x => x.id === id);
       document.getElementById('editUserId').value = id;
       document.getElementById('editUserNameField').value = u.name || '';
+      document.getElementById('editUserEmailField').value = u.email || '';
+      document.getElementById('editUserOldEmail').value = u.email || ''; // Store original
       document.getElementById('editUserModal').classList.add('open');
   }
-  function saveUserEdit() {
-      const id = document.getElementById('editUserId').value;
-      const name = document.getElementById('editUserNameField').value;
-      db.collection('users').doc(id).update({ name }).then(() => closeModal('editUserModal'));
-  }
 
+function saveUserEdit() {
+      const id = document.getElementById('editUserId').value;
+      const name = document.getElementById('editUserNameField').value.trim();
+      const newEmail = document.getElementById('editUserEmailField').value.trim();
+      const oldEmail = document.getElementById('editUserOldEmail').value.trim();
+
+      if (!newEmail || !name) return alert('Name and Email are required.');
+
+      const updates = { 
+          name: name, 
+          email: newEmail,
+          updatedAt: new Date()
+      };
+
+      // 1. Update the CRM Database (Firestore)
+      db.collection('users').doc(id).update(updates).then(() => {
+          closeModal('editUserModal');
+          
+          // 2. Handle the Free-Plan Auth Constraint
+          if (newEmail !== oldEmail) {
+              alert(
+                `STEP 1 COMPLETE: CRM Profile updated to ${newEmail}.\n\n` +
+                `STEP 2 REQUIRED (Free Plan Constraint):\n` +
+                `Because we are on the Firebase Free tier, you must manually update their login credential.\n\n` +
+                `Please go to:\nFirebase Console -> Authentication -> Users -> Edit User, and change their email there.`
+              );
+          } else {
+              alert('User profile updated successfully.');
+          }
+          
+          // Refresh UI locally
+          const userIndex = allUsers.findIndex(u => u.id === id);
+          if(userIndex > -1) {
+              allUsers[userIndex].name = name;
+              allUsers[userIndex].email = newEmail;
+              renderUsers();
+          }
+          
+      }).catch(e => {
+          console.error(e);
+          alert("Error updating user: " + e.message);
+      });
+  }
   async function fetchHistory() {
       const tbody = document.getElementById('historyBody');
       const callerSelect = document.getElementById('h_caller');
