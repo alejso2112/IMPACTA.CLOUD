@@ -865,27 +865,43 @@ async function exportAllData() {
     btn.disabled = true;
 
     try {
-        // 1. GENERATE LEADS CSV
-        const leadHeaders = ["Lead ID", "Company", "City", "State", "Industry", "Phone", "Email", "Stage", "Next Action", "Assigned Agent", "Initial Notes", "Created At"];
+        // Helper to clean strings for CSV (removes line breaks, escapes quotes)
+        const cleanCSV = (str) => (str || "").toString().replace(/"/g, '""').replace(/\n/g, ' ');
+
+        // 1. GENERATE LEADS CSV (Now includes GBP 1-3 & Recommendation)
+        const leadHeaders = [
+            "Lead ID", "Company", "City", "State", "Industry", "Phone", "Email", 
+            "Stage", "Next Action", "Assigned Agent", 
+            "GBP 1", "GBP 2", "GBP 3", "Recommendation", 
+            "Initial Notes", "Created At"
+        ];
         let leadsCsv = leadHeaders.join(",") + "\n";
 
         allLeads.forEach(l => {
             const dateStr = l.createdAt && l.createdAt.toDate ? l.createdAt.toDate().toISOString() : "";
-            // Escape quotes and commas for safe CSV formatting
-            const cleanNote = (l.notes || "").replace(/"/g, '""').replace(/\n/g, ' '); 
+            
+            // Checking for both exact and camelCase keys just in case the CSV import saved them differently
+            const gbp1 = l.gbp1 || l['GBP 1'] || l['GBP 1 (Relevance)'] || "";
+            const gbp2 = l.gbp2 || l['GBP 2'] || l['GBP 2 (Conversion)'] || "";
+            const gbp3 = l.gbp3 || l['GBP 3'] || l['GBP 3 (Systems)'] || "";
+            const rec  = l.recommendation || l['Recommendation'] || "";
             
             const row = [
                 l.id,
-                `"${l.company || ''}"`,
-                `"${l.cityClean || ''}"`,
-                `"${l.stateExtracted || ''}"`,
-                `"${l.industry || ''}"`,
-                `"${l.phone || ''}"`,
-                `"${l.email || ''}"`,
-                `"${l.stage || ''}"`,
-                `"${l.nextAction || ''}"`,
-                `"${l.assignedName || 'Unassigned'}"`,
-                `"${cleanNote}"`,
+                `"${cleanCSV(l.company)}"`,
+                `"${cleanCSV(l.cityClean)}"`,
+                `"${cleanCSV(l.stateExtracted)}"`,
+                `"${cleanCSV(l.industry)}"`,
+                `"${cleanCSV(l.phone)}"`,
+                `"${cleanCSV(l.email)}"`,
+                `"${cleanCSV(l.stage)}"`,
+                `"${cleanCSV(l.nextAction)}"`,
+                `"${cleanCSV(l.assignedName || 'Unassigned')}"`,
+                `"${cleanCSV(gbp1)}"`,
+                `"${cleanCSV(gbp2)}"`,
+                `"${cleanCSV(gbp3)}"`,
+                `"${cleanCSV(rec)}"`,
+                `"${cleanCSV(l.notes)}"`,
                 `"${dateStr}"`
             ];
             leadsCsv += row.join(",") + "\n";
@@ -905,15 +921,14 @@ async function exportAllData() {
             const agentName = userMap[d.createdBy] ? userMap[d.createdBy].name || userMap[d.createdBy].email : "Unknown";
             const timeStr = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : "";
             
-            const cleanText = (d.text || "").replace(/"/g, '""').replace(/\n/g, ' ');
-            const cleanDetails = (d.details || "").replace(/"/g, '""').replace(/\n/g, ' ');
+            const combinedNotes = `${d.text || ''} ${d.details || ''}`.trim();
 
             const row = [
                 parentLeadId,
-                `"${compName}"`,
-                `"${agentName}"`,
-                `"${d.action || ''}"`,
-                `"${cleanText} ${cleanDetails}"`,
+                `"${cleanCSV(compName)}"`,
+                `"${cleanCSV(agentName)}"`,
+                `"${cleanCSV(d.action)}"`,
+                `"${cleanCSV(combinedNotes)}"`,
                 `"${timeStr}"`
             ];
             historyCsv += row.join(",") + "\n";
