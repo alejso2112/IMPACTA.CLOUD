@@ -394,6 +394,7 @@
                     <td><span class="${badgeClass}">${d.role}</span></td>
                     <td style="color:var(--muted); font-size:12px;">${created}</td>
                     <td style="text-align:right">
+                        <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="sendPasswordReset('${d.email}')">Reset Pass</button>
                         <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditUser('${doc.id}')">Edit</button>
                         <button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteUser('${doc.id}')">Remove</button>
                     </td>
@@ -789,6 +790,20 @@
 
   function logout() { auth.signOut().then(() => window.location.href = 'index.html'); }
   init();
+
+  // Add this to the script section of admin.html
+function sendPasswordReset(email) {
+    if(!confirm(`Send password reset email to ${email}?`)) return;
+    
+    auth.sendPasswordResetEmail(email)
+        .then(() => {
+            alert(`Password reset email successfully sent to ${email}`);
+        })
+        .catch((error) => {
+            console.error("Error sending reset email:", error);
+            alert(`Error: ${error.message}`);
+        });
+}
 </script>
 </body>
 </html>
